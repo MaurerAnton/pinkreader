@@ -15,6 +15,7 @@
 
 #include <QStandardPaths>
 #include <QDir>
+#include <QSettings>
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -60,6 +61,13 @@ void AppController::initialize() {
 
     // Setup subreddit search model
     m_subredditModel = new SubredditListModel(this);
+
+    // Load content settings
+    {
+        QSettings settings;
+        m_showNsfw = settings.value("content/showNsfw", true).toBool();
+        m_autoHideRead = settings.value("content/autoHideRead", false).toBool();
+    }
 
     // Setup image cache
     QString imageCachePath = QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
@@ -378,6 +386,40 @@ void AppController::saveSubscriptions() {
         file.write(QJsonDocument(arr).toJson());
         file.close();
     }
+}
+
+void AppController::setShowNsfw(bool v) {
+    if (m_showNsfw != v) {
+        m_showNsfw = v;
+        QSettings().setValue("content/showNsfw", v);
+        emit contentSettingsChanged();
+    }
+}
+
+void AppController::setAutoHideRead(bool v) {
+    if (m_autoHideRead != v) {
+        m_autoHideRead = v;
+        QSettings().setValue("content/autoHideRead", v);
+        emit contentSettingsChanged();
+    }
+}
+
+void AppController::markPostRead(const QString& postId) {
+    if (postId.isEmpty()) return;
+    m_readPostIds.insert(postId);
+}
+
+void AppController::hidePost(const QString& postId) {
+    markPostRead(postId);
+    m_client->hidePost("t3_" + postId);
+}
+
+bool AppController::isPostRead(const QString& postId) const {
+    return m_readPostIds.contains(postId);
+}
+
+QStringList AppController::readPostIds() const {
+    return QStringList(m_readPostIds.begin(), m_readPostIds.end());
 }
 
 } // namespace PinkReader

@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QStringList>
+#include <QSet>
 #include <memory>
 #include "../core/models.hpp"
 #include "post_list_model.hpp"
@@ -45,6 +46,9 @@ class AppController : public QObject {
     Q_PROPERTY(int profileLinkKarma READ profileLinkKarma NOTIFY profileUserChanged)
     Q_PROPERTY(int profileCommentKarma READ profileCommentKarma NOTIFY profileUserChanged)
     Q_PROPERTY(QString profileCreated READ profileCreated NOTIFY profileUserChanged)
+    Q_PROPERTY(bool showNsfw READ showNsfw WRITE setShowNsfw NOTIFY contentSettingsChanged)
+    Q_PROPERTY(bool autoHideRead READ autoHideRead WRITE setAutoHideRead NOTIFY contentSettingsChanged)
+    Q_PROPERTY(QStringList readPostIds READ readPostIds NOTIFY contentSettingsChanged)
     
 public:
     explicit AppController(QObject* parent = nullptr);
@@ -79,6 +83,9 @@ public:
     Q_INVOKABLE qint64 cacheSize();
     Q_INVOKABLE void handleOAuthRedirect(const QString& url);
     Q_INVOKABLE void retryOffline();
+    Q_INVOKABLE void markPostRead(const QString& postId);
+    Q_INVOKABLE void hidePost(const QString& postId);
+    Q_INVOKABLE bool isPostRead(const QString& postId) const;
 
     ImageCache* imageCache() const { return m_imageCache; }
     MediaLoader* mediaLoader() const { return m_mediaLoader; }
@@ -93,6 +100,11 @@ public:
     int profileLinkKarma() const { return m_profileLinkKarma; }
     int profileCommentKarma() const { return m_profileCommentKarma; }
     QString profileCreated() const { return m_profileCreated; }
+    bool showNsfw() const { return m_showNsfw; }
+    void setShowNsfw(bool v);
+    bool autoHideRead() const { return m_autoHideRead; }
+    void setAutoHideRead(bool v);
+    QStringList readPostIds() const;
 
 signals:
     void loadingChanged();
@@ -106,6 +118,7 @@ signals:
     void offlineChanged();
     void pendingActionsChanged();
     void profileUserChanged();
+    void contentSettingsChanged();
     
 private:
     void initialize();
@@ -140,6 +153,9 @@ private:
     int m_profileLinkKarma = 0;
     int m_profileCommentKarma = 0;
     QString m_profileCreated;
+    bool m_showNsfw = true;
+    bool m_autoHideRead = false;
+    QSet<QString> m_readPostIds;
 };
 
 } // namespace PinkReader

@@ -46,6 +46,75 @@ Page {
 
         Rectangle { height: 1; Layout.fillWidth: true; color: app.theme.divider }
 
+        // Font size
+        Label {
+            text: "Font size"
+            font.pixelSize: 18; font.bold: true
+            color: app.theme.primary
+        }
+
+        RowLayout {
+            spacing: 4
+
+            Repeater {
+                model: [
+                    { label: "S", scale: 0.85 },
+                    { label: "M", scale: 1.0 },
+                    { label: "L", scale: 1.2 },
+                    { label: "XL", scale: 1.4 }
+                ]
+                delegate: Button {
+                    text: modelData.label
+                    flat: true
+                    highlighted: Math.abs(app.theme.fontScale - modelData.scale) < 0.01
+                    contentItem: Label {
+                        text: modelData.label
+                        color: parent.highlighted ? app.theme.primary : app.theme.textSecondary
+                        font.pixelSize: 14; font.bold: parent.highlighted
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                    onClicked: app.theme.fontScale = modelData.scale
+                }
+            }
+        }
+
+        Rectangle { height: 1; Layout.fillWidth: true; color: app.theme.divider }
+
+        // Content
+        Label {
+            text: "Content"
+            font.pixelSize: 18; font.bold: true
+            color: app.theme.primary
+        }
+
+        RowLayout {
+            Label {
+                text: "Show NSFW content"
+                font.pixelSize: 14; color: app.theme.text
+                Layout.fillWidth: true
+            }
+
+            Switch {
+                checked: app.showNsfw
+                onCheckedChanged: app.showNsfw = checked
+            }
+        }
+
+        RowLayout {
+            Label {
+                text: "Auto-hide read posts"
+                font.pixelSize: 14; color: app.theme.text
+                Layout.fillWidth: true
+            }
+
+            Switch {
+                checked: app.autoHideRead
+                onCheckedChanged: app.autoHideRead = checked
+            }
+        }
+
+        Rectangle { height: 1; Layout.fillWidth: true; color: app.theme.divider }
+
         // Cache
         Label {
             text: "Cache"

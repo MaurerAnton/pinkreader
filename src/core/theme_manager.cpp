@@ -23,16 +23,24 @@ void ThemeManager::toggle() {
 void ThemeManager::load() {
     QSettings settings;
     m_dark = settings.value("theme/dark", true).toBool();
+    m_fontScale = settings.value("theme/fontScale", 1.0).toDouble();
     emit themeChanged();
 }
 
 void ThemeManager::save() {
     QSettings settings;
     settings.setValue("theme/dark", m_dark);
+    settings.setValue("theme/fontScale", m_fontScale);
 }
 
-// Dark palette: Deep blue/purple with pink accent
-// Light palette: White/light gray with pink accent
+void ThemeManager::setFontScale(qreal scale) {
+    scale = qBound(0.85, scale, 1.5);
+    if (m_fontScale != scale) {
+        m_fontScale = scale;
+        save();
+        emit fontScaleChanged();
+    }
+}
 
 QColor ThemeManager::background() const {
     return m_dark ? QColor("#0f0f1a") : QColor("#f5f5f5");

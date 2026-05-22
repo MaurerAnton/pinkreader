@@ -7,6 +7,9 @@ Rectangle {
     color: app.theme.surface
     height: Math.max(90, contentColumn.height + 20)
 
+    Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+    Behavior on opacity { NumberAnimation { duration: 300 } }
+
     property string postTitle: ""
     property string postAuthor: ""
     property string postSubreddit: ""
@@ -36,6 +39,7 @@ Rectangle {
     signal upvote()
     signal downvote()
     signal thumbnailClicked()
+    signal hideRequested()
 
     function hasThumbnail() {
         return postThumbnail && postThumbnail !== "self" && postThumbnail !== "default" && postThumbnail !== "nsfw"
@@ -240,6 +244,38 @@ Rectangle {
 
     MouseArea {
         anchors.fill: parent
-        onClicked: postClicked()
+        preventStealing: true
+
+        property real pressX: 0
+        property bool dragging: false
+
+        onPressed: {
+            pressX = mouse.x
+            dragging = false
+        }
+
+        onPositionChanged: {
+            if (!dragging && Math.abs(mouse.x - pressX) > 10) {
+                dragging = true
+            }
+            if (dragging) {
+                card.x = Math.max(mouse.x - pressX, -130)
+            }
+        }
+
+        onReleased: {
+            if (card.x < -70) {
+                hideRequested()
+                card.opacity = 0
+                card.x = -500
+            } else {
+                card.x = 0
+            }
+            dragging = false
+        }
+
+        onClicked: {
+            if (!dragging) postClicked()
+        }
     }
 }

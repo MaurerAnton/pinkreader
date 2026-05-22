@@ -21,6 +21,7 @@ class ThemeManager : public QObject {
     Q_PROPERTY(QColor warning READ warning NOTIFY themeChanged)
     Q_PROPERTY(int elevation READ elevation NOTIFY themeChanged)
     Q_PROPERTY(qreal radius READ radius NOTIFY themeChanged)
+    Q_PROPERTY(qreal fontScale READ fontScale WRITE setFontScale NOTIFY fontScaleChanged)
 
 public:
     explicit ThemeManager(QObject* parent = nullptr);
@@ -31,6 +32,9 @@ public:
     Q_INVOKABLE void toggle();
     Q_INVOKABLE void load();
     Q_INVOKABLE void save();
+
+    qreal fontScale() const { return m_fontScale; }
+    void setFontScale(qreal scale);
 
     // Colors
     QColor background() const;
@@ -49,9 +53,11 @@ public:
 
 signals:
     void themeChanged();
+    void fontScaleChanged();
 
 private:
     bool m_dark = true;
+    qreal m_fontScale = 1.0;
 };
 
 } // namespace PinkReader

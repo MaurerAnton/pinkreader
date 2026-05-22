@@ -163,6 +163,8 @@ Page {
 
             delegate: PostCard {
                 width: postList.width
+                visible: (!nsfw || app.showNsfw) && (!app.isPostRead(postId) || !app.autoHideRead)
+                height: visible ? Math.max(90, contentColumn.height + 20) : 0
                 postTitle: title; postAuthor: author; postSubreddit: subreddit
                 postScore: score; postComments: commentCount; postThumbnail: thumbnail
                 postDomain: domain; postCreated: created; postNsfw: nsfw
@@ -200,6 +202,10 @@ Page {
                 onAuthorClicked: stackView.push(profilePage, { "username": author })
                 onUpvote: app.vote("t3_" + postId, 1)
                 onDownvote: app.vote("t3_" + postId, -1)
+                onHideRequested: {
+                    app.markPostRead(postId)
+                    app.hidePost(postId)
+                }
             }
 
             footer: Item {
