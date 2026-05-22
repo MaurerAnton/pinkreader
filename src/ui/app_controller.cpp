@@ -1,0 +1,195 @@
+#include "app_controller.hpp"
+#include "post_list_model.hpp"
+#include "comment_tree_model.hpp"
+#include "../core/reddit_client.hpp"
+#include "../core/cache_manager.hpp"
+#include "../core/account_manager.hpp"
+#include "../core/content_resolver.hpp"
+
+#include <QStandardPaths>
+#include <QDir>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonArray>
+
+namespace PinkReader {
+
+AppController::AppController(QObject* parent)
+    : QObject(parent)
+    , m_postModel(new PostListModel(this))
+    , m_commentModel(new CommentTreeModel(this))
+{
+    initialize();
+}
+
+AppController::~AppController() = default;
+
+void AppController::initialize() {
+    // Setup cache
+    QString cachePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+                        + "/cache.db";
+    QDir().mkpath(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+    
+    m_cache = new CacheManager(cachePath, this);
+    m_cache->initialize();
+    
+    // Setup account manager
+    m_accounts = new AccountManager(this);
+    
+    // Setup content resolver
+    m_contentResolver = new ContentResolver(this);
+    
+    // Setup API client
+    m_client = new RedditClient(this);
+    m_client->setCacheManager(m_cache);
+    m_client->setAccountManager(m_accounts);
+    m_client->setContentResolver(m_contentResolver);
+    
+    // Connect signals
+    connect(m_client, &RedditClient::postsReady, this, [this](const QVector<Post>& posts, const QString& after) {
+        m_postModel->setPosts(posts, after);
+        m_loading = false;
+        emit loadingChanged();
+    });
+    
+    connect(m_client, &RedditClient::commentsReady, this, [this](const QVector<Comment>& comments) {
+        m_commentModel->setComments(comments);
+        m_loading = false;
+        emit loadingChanged();
+    });
+    
+    connect(m_client, &RedditClient::errorOccurred, this, [this](const QString& err) {
+        m_loading = false;
+        emit loadingChanged();
+        emit errorOccurred(err);
+    });
+    
+    connect(m_client, &RedditClient::loadingChanged, this, [this]() {
+        m_loading = m_client->loading();
+        emit loadingChanged();
+    });
+    
+    connect(m_accounts, &AccountManager::accountsChanged, this, [this]() {
+        auto* acc = m_accounts->activeAccount();
+        m_loggedIn = acc && !acc->isAnonymous;
+        m_currentUser = m_loggedIn ? acc->username : QString{};
+        emit loginStateChanged();
+    });
+    
+    loadSubscriptions();
+}
+
+void AppController::loadFrontpage(const QString& sort) {
+    m_loading = true;
+    emit loadingChanged();
+    m_currentSubreddit.clear();
+    m_currentSort = sort;
+    emit currentSubredditChanged();
+    m_client->fetchFrontpage(sort);
+}
+
+void AppController::loadSubreddit(const QString& subreddit, const QString& sort) {
+    m_loading = true;
+    emit loadingChanged();
+    m_currentSubreddit = subreddit;
+    m_currentSort = sort;
+    emit currentSubredditChanged();
+    emit currentSortChanged();
+    m_client->fetchSubreddit(subreddit, sort);
+}
+
+void AppController::loadComments(const QString& postId, const QString& subreddit) {
+    m_loading = true;
+    emit loadingChanged();
+    m_client->fetchComments(postId, subreddit);
+}
+
+void AppController::loadMore() {
+    m_loading = true;
+    emit loadingChanged();
+    m_client->loadMore();
+}
+
+void AppController::refresh() {
+    m_client->refresh();
+}
+
+void AppController::vote(const QString& fullname, int direction) {
+    m_client->vote(fullname, direction);
+}
+
+void AppController::savePost(const QString& fullname) {
+    m_client->savePost(fullname);
+}
+
+void AppController::search(const QString& query) {
+    m_loading = true;
+    emit loadingChanged();
+    m_client->search(query, m_currentSubreddit);
+}
+
+void AppController::login() {
+    emit errorOccurred("OAuth login flow: open browser for authorization");
+    // In production: open auth URL in browser, catch redirect
+}
+
+void AppController::logout() {
+    m_accounts->removeAccount(m_currentUser);
+    m_loggedIn = false;
+    m_currentUser.clear();
+    emit loginStateChanged();
+}
+
+void AppController::addSubscription(const QString& subreddit) {
+    if (!subreddit.isEmpty() && !m_subscribed.contains(subreddit)) {
+        m_subscribed.append(subreddit);
+        m_subscribed.sort();
+        saveSubscriptions();
+        emit subscribedChanged();
+    }
+}
+
+void AppController::removeSubscription(const QString& subreddit) {
+    m_subscribed.removeAll(subreddit);
+    saveSubscriptions();
+    emit subscribedChanged();
+}
+
+void AppController::clearCache() {
+    if (m_cache) m_cache->clearAll();
+}
+
+qint64 AppController::cacheSize() {
+    return m_cache ? m_cache->cacheSize() : 0;
+}
+
+void AppController::loadSubscriptions() {
+    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+                   + "/subscriptions.json";
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) return;
+    
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    file.close();
+    
+    for (const auto& val : doc.array()) {
+        m_subscribed.append(val.toString());
+    }
+}
+
+void AppController::saveSubscriptions() {
+    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+                   + "/subscriptions.json";
+    QDir().mkpath(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
+    
+    QJsonArray arr;
+    for (const auto& s : m_subscribed) arr.append(s);
+    
+    QFile file(path);
+    if (file.open(QIODevice::WriteOnly)) {
+        file.write(QJsonDocument(arr).toJson());
+        file.close();
+    }
+}
+
+} // namespace PinkReader

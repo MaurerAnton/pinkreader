@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PinkReader</string>
+    <string name="feed">Feed</string>
+    <string name="settings">Settings</string>
+    <string name="login">Login</string>
+    <string name="logout">Logout</string>
+    <string name="search">Search Reddit...</string>
+    <string name="load_more">Load more</string>
+    <string name="empty_feed">No posts to show</string>
+    <string name="error_network">Network error. Check your connection.</string>
+    <string name="error_rate_limited">Rate limited. Please wait.</string>
+    <string name="offline_mode">Offline mode - showing cached content</string>
+</resources>

@@ -1,0 +1,68 @@
+# clang-format config for PinkReader
+
+BasedOnStyle: Google
+
+Language: Cpp
+Standard: c++20
+ColumnLimit: 120
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+AccessModifierOffset: -4
+IndentCaseLabels: true
+IndentPPDirectives: AfterHash
+
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortLambdasOnASingleLine: All
+
+BreakBeforeBraces: Attach
+BreakConstructorInitializers: BeforeColon
+BreakInheritanceList: BeforeColon
+
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+SortIncludes: true
+SortUsingDeclarations: true
+
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+
+NamespaceIndentation: None
+CompactNamespaces: false
+
+AlwaysBreakTemplateDeclarations: Yes
+BinPackArguments: true
+BinPackParameters: true
+
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<Q.*>'
+    Priority: 3
+    SortPriority: 1
+  - Regex: '^<.*\.h>'
+    Priority: 3
+    SortPriority: 2
+  - Regex: '^<.*>'
+    Priority: 3
+    SortPriority: 3
+  - Regex: '^".*\.hpp"'
+    Priority: 2
+    SortPriority: 1
+  - Regex: '^".*\.h"'
+    Priority: 2
+    SortPriority: 2
+  - Regex: '^".*"'
+    Priority: 1
+    SortPriority: 3

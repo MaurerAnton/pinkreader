@@ -1,0 +1,67 @@
+name: Build Desktop (Linux)
+
+on:
+  push:
+    branches: [main, master]
+    paths-ignore:
+      - '*.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'android/**'
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt6
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            qt6-base-dev \
+            qt6-base-private-dev \
+            qt6-declarative-dev \
+            qt6-tools-dev \
+            qt6-tools-dev-tools \
+            qml6-module-qtquick-controls \
+            qml6-module-qtquick-layouts \
+            qml6-module-qtquick-templates \
+            qt6-quickcontrols2-dev \
+            libqt6sql6-sqlite \
+            libqt6network6 \
+            libgl1-mesa-dev \
+            libxkbcommon-dev \
+            cmake \
+            ninja-build \
+            g++-14
+
+      - name: Configure CMake
+        run: >
+          cmake -B build-desktop
+          -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_CXX_COMPILER=g++-14
+          -DCMAKE_C_COMPILER=gcc-14
+          -DCMAKE_CXX_STANDARD=20
+          -Werror=dev
+
+      - name: Build
+        run: cmake --build build-desktop --parallel $(nproc)
+
+      - name: Upload artifacts
+        if: matrix.build_type == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pinkreader-linux-x64
+          path: build-desktop/pinkreader
+          retention-days: 7
