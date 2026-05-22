@@ -169,6 +169,22 @@ void AppController::initialize() {
         emit loadingChanged();
     });
 
+    connect(m_client, &RedditClient::userAboutReady, this,
+        [this](const QString& username, int linkKarma, int commentKarma, const QString& created) {
+            m_profileUser = username;
+            m_profileLinkKarma = linkKarma;
+            m_profileCommentKarma = commentKarma;
+            m_profileCreated = created;
+            emit profileUserChanged();
+        });
+
+    connect(m_client, &RedditClient::userPostsReady, this,
+        [this](const QVector<Post>& posts, const QString& after) {
+            m_postModel->setPosts(posts, after);
+            m_loading = false;
+            emit loadingChanged();
+        });
+
     connect(m_accounts, &AccountManager::accountsChanged, this, [this]() {
         auto* acc = m_accounts->activeAccount();
         m_loggedIn = acc && !acc->isAnonymous;
@@ -273,6 +289,16 @@ void AppController::searchSubreddits(const QString& query, const QString& sort) 
     m_subredditModel->setSortBy(sort);
     emit loadingChanged();
     m_client->searchSubreddits(query);
+}
+
+void AppController::fetchUserAbout(const QString& username) {
+    m_client->fetchUserAbout(username);
+}
+
+void AppController::fetchUserPosts(const QString& username, const QString& sort) {
+    m_loading = true;
+    emit loadingChanged();
+    m_client->fetchUserPosts(username, sort);
 }
 
 void AppController::retryOffline() {

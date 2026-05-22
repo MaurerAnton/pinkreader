@@ -103,6 +103,7 @@ qt_add_qml_module(app
         qml/pages/LoginPage.qml
         qml/pages/AccountsPage.qml
         qml/pages/DiscoverPage.qml
+        qml/pages/ProfilePage.qml
         qml/components/PostCard.qml
         qml/components/CommentItem.qml
         qml/components/MediaViewer.qml
@@ -113,6 +114,7 @@ qt_add_qml_module(app
         qml/components/AsyncImage.qml
         qml/components/GalleryView.qml
         qml/components/VideoPlayer.qml
+        qml/components/SubredditSidebar.qml
 )
 
 # Android resources

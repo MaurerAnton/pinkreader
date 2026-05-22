@@ -32,6 +32,7 @@ Rectangle {
 
     signal postClicked()
     signal subredditClicked()
+    signal authorClicked()
     signal upvote()
     signal downvote()
     signal thumbnailClicked()
@@ -190,10 +191,28 @@ Rectangle {
             }
 
             RowLayout {
-                spacing: 8
+                spacing: 4
 
                 Label {
-                    text: "r/" + postSubreddit + " • u/" + postAuthor + " • " + postDomain
+                    text: "r/" + postSubreddit
+                    font.pixelSize: 12; color: app.theme.primary
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: subredditClicked()
+                    }
+                }
+
+                Label {
+                    text: "• u/" + postAuthor
+                    font.pixelSize: 12; color: app.theme.textSecondary
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: authorClicked()
+                    }
+                }
+
+                Label {
+                    text: "• " + postDomain
                     font.pixelSize: 12; color: app.theme.textSecondary
                     elide: Text.ElideRight
                     Layout.fillWidth: true

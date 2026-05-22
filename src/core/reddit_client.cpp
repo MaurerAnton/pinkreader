@@ -253,6 +253,72 @@ void RedditClient::searchSubreddits(const QString& query) {
     });
 }
 
+void RedditClient::fetchUserAbout(const QString& username) {
+    setLoading(true);
+    QUrl url("https://www.reddit.com/user/" + username + "/about.json");
+
+    auto* nam = new QNetworkAccessManager(this);
+    QNetworkRequest req(url);
+    req.setRawHeader("User-Agent", "PinkReader/0.1");
+
+    auto* reply = nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, nam, username]() {
+        reply->deleteLater();
+        nam->deleteLater();
+        setLoading(false);
+
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(reply->errorString());
+            return;
+        }
+        QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+        QJsonObject data = doc.object()["data"].toObject();
+        emit userAboutReady(
+            username,
+            data["link_karma"].toInt(),
+            data["comment_karma"].toInt(),
+            QDateTime::fromSecsSinceEpoch(
+                static_cast<qint64>(data["created_utc"].toDouble()), Qt::UTC
+            ).toString("yyyy-MM-dd")
+        );
+    });
+}
+
+void RedditClient::fetchUserPosts(const QString& username, const QString& sort) {
+    setLoading(true);
+    QUrl url("https://www.reddit.com/user/" + username + "/submitted.json");
+    QUrlQuery q;
+    q.addQueryItem("sort", sort);
+    q.addQueryItem("limit", "25");
+    url.setQuery(q);
+
+    auto* nam = new QNetworkAccessManager(this);
+    QNetworkRequest req(url);
+    req.setRawHeader("User-Agent", "PinkReader/0.1");
+
+    auto* reply = nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, nam]() {
+        reply->deleteLater();
+        nam->deleteLater();
+        setLoading(false);
+
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(reply->errorString());
+            return;
+        }
+        QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+        QJsonObject data = doc.object()["data"].toObject();
+        QJsonArray children = data["children"].toArray();
+
+        QVector<Post> posts;
+        for (const auto& child : children) {
+            QJsonObject childData = child.toObject()["data"].toObject();
+            posts.append(Post::fromJson(childData));
+        }
+        emit userPostsReady(posts, data["after"].toString());
+    });
+}
+
 void RedditClient::refresh() {
     m_currentRequest.after.clear();
     fetchFrontpage(

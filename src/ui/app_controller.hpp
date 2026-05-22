@@ -41,6 +41,10 @@ class AppController : public QObject {
     Q_PROPERTY(MarkdownParser* markdown READ markdown CONSTANT)
     Q_PROPERTY(SubredditListModel* subredditModel READ subredditModel CONSTANT)
     Q_PROPERTY(QString authUrl READ authUrl NOTIFY authUrlReady)
+    Q_PROPERTY(QString profileUser READ profileUser NOTIFY profileUserChanged)
+    Q_PROPERTY(int profileLinkKarma READ profileLinkKarma NOTIFY profileUserChanged)
+    Q_PROPERTY(int profileCommentKarma READ profileCommentKarma NOTIFY profileUserChanged)
+    Q_PROPERTY(QString profileCreated READ profileCreated NOTIFY profileUserChanged)
     
 public:
     explicit AppController(QObject* parent = nullptr);
@@ -65,6 +69,8 @@ public:
     Q_INVOKABLE void submitComment(const QString& parentFullname, const QString& text);
     Q_INVOKABLE void search(const QString& query);
     Q_INVOKABLE void searchSubreddits(const QString& query, const QString& sort = "relevance");
+    Q_INVOKABLE void fetchUserAbout(const QString& username);
+    Q_INVOKABLE void fetchUserPosts(const QString& username, const QString& sort = "new");
     Q_INVOKABLE void login();
     Q_INVOKABLE void logout();
     Q_INVOKABLE void addSubscription(const QString& subreddit);
@@ -83,6 +89,10 @@ public:
     ThemeManager* theme() const { return m_theme; }
     MarkdownParser* markdown() const { return m_markdown; }
     SubredditListModel* subredditModel() const { return m_subredditModel; }
+    QString profileUser() const { return m_profileUser; }
+    int profileLinkKarma() const { return m_profileLinkKarma; }
+    int profileCommentKarma() const { return m_profileCommentKarma; }
+    QString profileCreated() const { return m_profileCreated; }
 
 signals:
     void loadingChanged();
@@ -95,6 +105,7 @@ signals:
     void authUrlReady();
     void offlineChanged();
     void pendingActionsChanged();
+    void profileUserChanged();
     
 private:
     void initialize();
@@ -125,6 +136,10 @@ private:
     QString m_authUrl;
     bool m_isOffline = false;
     int m_pendingActions = 0;
+    QString m_profileUser;
+    int m_profileLinkKarma = 0;
+    int m_profileCommentKarma = 0;
+    QString m_profileCreated;
 };
 
 } // namespace PinkReader

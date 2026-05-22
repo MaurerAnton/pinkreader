@@ -188,6 +188,7 @@ ApplicationWindow {
     Component { id: settingsPage; SettingsPage {} }
     Component { id: accountsPage; AccountsPage {} }
     Component { id: discoverPage; DiscoverPage {} }
+    Component { id: profilePage; ProfilePage {} }
     Component { id: postDetailPage; PostDetailPage {} }
 
     Connections {

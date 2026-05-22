@@ -94,11 +94,23 @@ Page {
             Layout.preferredHeight: app.currentSubreddit ? 40 : 0
             color: app.theme.accent
 
-            Label {
-                anchors.centerIn: parent
-                text: "r/" + (app.currentSubreddit || "")
-                font.pixelSize: 18; font.bold: true
-                color: app.theme.primary
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 12
+
+                Label {
+                    text: "r/" + (app.currentSubreddit || "")
+                    font.pixelSize: 18; font.bold: true
+                    color: app.theme.primary
+                    Layout.fillWidth: true
+                }
+
+                Button {
+                    flat: true
+                    visible: app.currentSubreddit !== ""
+                    contentItem: Label { text: "ⓘ"; font.pixelSize: 18; color: app.theme.textSecondary }
+                    onClicked: subredditSidebar.load({})
+                }
             }
         }
 
@@ -185,6 +197,7 @@ Page {
                         mediaViewerPopup.openMedia(url, "image", [], "")
                 }
                 onSubredditClicked: app.loadSubreddit(postSubreddit, "hot")
+                onAuthorClicked: stackView.push(profilePage, { "username": author })
                 onUpvote: app.vote("t3_" + postId, 1)
                 onDownvote: app.vote("t3_" + postId, -1)
             }
@@ -208,4 +221,5 @@ Page {
     }
 
     MediaViewer { id: mediaViewerPopup }
+    SubredditSidebar { id: subredditSidebar }
 }

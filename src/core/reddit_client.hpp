@@ -40,6 +40,8 @@ public:
     Q_INVOKABLE void submitComment(const QString& parentFullname, const QString& text);
     Q_INVOKABLE void search(const QString& query, const QString& subreddit = "");
     Q_INVOKABLE void searchSubreddits(const QString& query);
+    Q_INVOKABLE void fetchUserAbout(const QString& username);
+    Q_INVOKABLE void fetchUserPosts(const QString& username, const QString& sort = "new");
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void loadMore();
     
@@ -48,6 +50,8 @@ signals:
     void commentsReady(const QVector<Comment>& comments);
     void subredditInfoReady(const Subreddit& info);
     void subredditsReady(const QVector<Subreddit>& subreddits);
+    void userAboutReady(const QString& username, int linkKarma, int commentKarma, const QString& created);
+    void userPostsReady(const QVector<Post>& posts, const QString& after);
     void voteComplete(const QString& fullname, int direction);
     void saveComplete(const QString& fullname, bool saved);
     void loadingChanged();
