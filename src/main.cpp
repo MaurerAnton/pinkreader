@@ -5,6 +5,7 @@
 #include <QFont>
 
 #include "ui/app_controller.hpp"
+#include "core/image_cache.hpp"
 
 int main(int argc, char* argv[]) {
     QGuiApplication app(argc, argv);
@@ -24,8 +25,11 @@ int main(int argc, char* argv[]) {
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("app", controller);
 
-    // Load from QRC: qt_add_qml_module places files at
-    // qrc:/qt/qml/<URI>/<relative-path-from-CMakeLists.txt>
+    // Register image provider
+    engine.addImageProvider("pink",
+        new PinkReader::PinkImageProvider(controller->imageCache()));
+
+    // Load from QRC
     const QUrl url("qrc:/qt/qml/PinkReader/qml/main.qml");
 
     QObject::connect(

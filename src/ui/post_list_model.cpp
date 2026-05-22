@@ -39,6 +39,27 @@ QVariant PostListModel::data(const QModelIndex& index, int role) const {
     case TypeRole:         return static_cast<int>(post.type);
     case FlairRole:        return post.flairText;
     case GildedRole:       return post.gildedCount;
+    case PostHintRole: {
+        // Detect post_hint from type
+        if (post.isSelf) return QStringLiteral("self");
+        if (post.isGallery) return QStringLiteral("gallery");
+        if (post.isVideo) return QStringLiteral("video");
+        if (post.type == PostType::Image) return QStringLiteral("image");
+        return QString{};
+    }
+    case IsGalleryRole:    return post.isGallery;
+    case IsVideoRole:      return post.isVideo;
+    case GalleryArrayRole: {
+        QVariantList list;
+        for (const auto& img : post.galleryImages) {
+            QVariantMap map;
+            map["url"] = img.url.toString();
+            map["width"] = img.width;
+            map["height"] = img.height;
+            list.append(map);
+        }
+        return list;
+    }
     default:               return {};
     }
 }
@@ -64,7 +85,11 @@ QHash<int, QByteArray> PostListModel::roleNames() const {
         {SavedRole, "saved"},
         {TypeRole, "postType"},
         {FlairRole, "flair"},
-        {GildedRole, "gilded"}
+        {GildedRole, "gilded"},
+        {PostHintRole, "postHint"},
+        {IsGalleryRole, "isGallery"},
+        {IsVideoRole, "isVideo"},
+        {GalleryArrayRole, "galleryArray"}
     };
 }
 

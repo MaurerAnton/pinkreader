@@ -38,6 +38,8 @@ set(CORE_SOURCES
     src/core/strategies/scrape_strategy.cpp
     src/core/account_manager.cpp
     src/core/content_resolver.cpp
+    src/core/image_cache.cpp
+    src/core/media_loader.cpp
 )
 
 set(CORE_HEADERS
@@ -54,6 +56,8 @@ set(CORE_HEADERS
     src/core/strategies/scrape_strategy.hpp
     src/core/account_manager.hpp
     src/core/content_resolver.hpp
+    src/core/image_cache.hpp
+    src/core/media_loader.hpp
 )
 
 # Source files - UI layer
@@ -92,6 +96,8 @@ qt_add_qml_module(app
         qml/components/ErrorBanner.qml
         qml/components/VoteButtons.qml
         qml/components/SubredditChip.qml
+        qml/components/AsyncImage.qml
+        qml/components/GalleryView.qml
 )
 
 # Android resources

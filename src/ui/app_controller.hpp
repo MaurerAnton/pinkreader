@@ -13,6 +13,8 @@ class RedditClient;
 class CacheManager;
 class AccountManager;
 class ContentResolver;
+class ImageCache;
+class MediaLoader;
 
 class AppController : public QObject {
     Q_OBJECT
@@ -24,6 +26,8 @@ class AppController : public QObject {
     Q_PROPERTY(QStringList subscribedSubreddits READ subscribedSubreddits NOTIFY subscribedChanged)
     Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY loginStateChanged)
     Q_PROPERTY(QString currentUser READ currentUser NOTIFY loginStateChanged)
+    Q_PROPERTY(ImageCache* imageCache READ imageCache CONSTANT)
+    Q_PROPERTY(MediaLoader* mediaLoader READ mediaLoader CONSTANT)
     
 public:
     explicit AppController(QObject* parent = nullptr);
@@ -52,6 +56,9 @@ public:
     Q_INVOKABLE void removeSubscription(const QString& subreddit);
     Q_INVOKABLE void clearCache();
     Q_INVOKABLE qint64 cacheSize();
+
+    ImageCache* imageCache() const { return m_imageCache; }
+    MediaLoader* mediaLoader() const { return m_mediaLoader; }
     
 signals:
     void loadingChanged();
@@ -71,6 +78,8 @@ private:
     CacheManager* m_cache;
     AccountManager* m_accounts;
     ContentResolver* m_contentResolver;
+    ImageCache* m_imageCache;
+    MediaLoader* m_mediaLoader;
     PostListModel* m_postModel;
     CommentTreeModel* m_commentModel;
     

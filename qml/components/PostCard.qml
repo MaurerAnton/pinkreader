@@ -23,11 +23,22 @@ Rectangle {
     property int postGilded: 0
     property string postId: ""
     property string name: ""
+    property string postUrl: ""
+    property string postHint: ""
+    property bool postIsGallery: false
+    property bool postIsVideo: false
+    property var galleryImages: []
+    property var galleryMediaIds: []
 
     signal postClicked()
     signal subredditClicked()
     signal upvote()
     signal downvote()
+    signal thumbnailClicked()
+
+    function hasThumbnail() {
+        return postThumbnail && postThumbnail !== "self" && postThumbnail !== "default" && postThumbnail !== "nsfw"
+    }
 
     RowLayout {
         anchors.fill: parent
@@ -74,18 +85,62 @@ Rectangle {
 
         // Thumbnail
         Rectangle {
-            Layout.preferredWidth: 64
-            Layout.preferredHeight: 64
+            Layout.preferredWidth: 72
+            Layout.preferredHeight: 72
             color: "#0f3460"
             radius: 4
-            visible: postThumbnail && postThumbnail !== "self" && postThumbnail !== "default"
+            visible: hasThumbnail()
 
-            Image {
+            AsyncImage {
                 anchors.fill: parent
                 anchors.margins: 2
-                source: postThumbnail
+                imageUrl: postThumbnail
                 fillMode: Image.PreserveAspectCrop
                 visible: parent.visible
+            }
+
+            // Media type indicator
+            Rectangle {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 2
+                width: 22
+                height: 22
+                radius: 4
+                color: "#e94560"
+                visible: postIsGallery || postIsVideo || postDomain === "v.redd.it" || postDomain === "youtube.com" || postDomain === "youtu.be"
+
+                Text {
+                    anchors.centerIn: parent
+                    text: postIsGallery ? "▦" : (postIsVideo || postDomain === "v.redd.it" ? "▶" : "▶")
+                    font.pixelSize: 12
+                    color: "#fff"
+                }
+            }
+
+            // Gallery count
+            Rectangle {
+                anchors.left: parent.left
+                anchors.bottom: parent.bottom
+                anchors.margins: 2
+                width: countText.width + 8
+                height: 18
+                radius: 3
+                color: Qt.rgba(0, 0, 0, 0.7)
+                visible: postIsGallery
+
+                Text {
+                    id: countText
+                    anchors.centerIn: parent
+                    text: galleryImages ? galleryImages.length + "📷" : "📷"
+                    font.pixelSize: 10
+                    color: "#fff"
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: thumbnailClicked()
             }
         }
 

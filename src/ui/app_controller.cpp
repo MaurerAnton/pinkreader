@@ -5,6 +5,8 @@
 #include "../core/cache_manager.hpp"
 #include "../core/account_manager.hpp"
 #include "../core/content_resolver.hpp"
+#include "../core/image_cache.hpp"
+#include "../core/media_loader.hpp"
 
 #include <QStandardPaths>
 #include <QDir>
@@ -38,7 +40,15 @@ void AppController::initialize() {
     
     // Setup content resolver
     m_contentResolver = new ContentResolver(this);
-    
+
+    // Setup image cache
+    QString imageCachePath = QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
+                             + "/images";
+    m_imageCache = new ImageCache(imageCachePath, this);
+
+    // Setup media loader
+    m_mediaLoader = new MediaLoader(this);
+
     // Setup API client
     m_client = new RedditClient(this);
     m_client->setCacheManager(m_cache);

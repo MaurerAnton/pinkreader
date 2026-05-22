@@ -74,13 +74,28 @@ Page {
                 postStickied: stickied
                 postVoteState: voteState
                 postGilded: gilded
+                postUrl: url
+                postHint: postHint || ""
+                postIsGallery: isGallery || false
+                postIsVideo: isVideo || false
+                galleryImages: galleryArray || []
 
                 onPostClicked: {
-                    var props = { "postId": postId, "subreddit": postSubreddit, "postTitle": postTitle }
-                    if (typeof postId !== 'undefined') {
-                        app.loadComments(postId, postSubreddit)
+                    app.loadComments(postId, postSubreddit)
+                    stackView.push(postDetailPage, {
+                        "postId": postId,
+                        "subreddit": postSubreddit,
+                        "postTitle": postTitle
+                    })
+                }
+                onThumbnailClicked: {
+                    if (galleryArray && galleryArray.length > 0) {
+                        mediaViewerPopup.openMedia(url, "gallery", galleryArray, "")
+                    } else if (isVideo || isGallery) {
+                        mediaViewerPopup.openMedia(url, isVideo ? "video" : "image", [], "")
+                    } else if (thumbnail && thumbnail !== "self" && thumbnail !== "default") {
+                        mediaViewerPopup.openMedia(url, "image", [], "")
                     }
-                    stackView.push(postDetailPage, props)
                 }
                 onSubredditClicked: {
                     app.loadSubreddit(postSubreddit, "hot")
@@ -108,5 +123,9 @@ Page {
                 visible: app.loading
             }
         }
+    }
+
+    MediaViewer {
+        id: mediaViewerPopup
     }
 }

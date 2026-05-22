@@ -32,7 +32,11 @@ public:
         SavedRole,
         TypeRole,
         FlairRole,
-        GildedRole
+        GildedRole,
+        PostHintRole,
+        IsGalleryRole,
+        IsVideoRole,
+        GalleryArrayRole
     };
     
     explicit PostListModel(QObject* parent = nullptr);
