@@ -10,6 +10,7 @@
 #include "../core/oauth_flow.hpp"
 #include "../core/offline_detector.hpp"
 #include "../core/offline_queue.hpp"
+#include "../core/theme_manager.hpp"
 
 #include <QStandardPaths>
 #include <QDir>
@@ -26,6 +27,7 @@ AppController::AppController(QObject* parent)
     , m_oauth(nullptr)
     , m_offlineDetector(nullptr)
     , m_offlineQueue(nullptr)
+    , m_theme(nullptr)
 {
     initialize();
 }
@@ -46,6 +48,9 @@ void AppController::initialize() {
     
     // Setup content resolver
     m_contentResolver = new ContentResolver(this);
+
+    // Setup theme
+    m_theme = new ThemeManager(this);
 
     // Setup image cache
     QString imageCachePath = QStandardPaths::writableLocation(QStandardPaths::CacheLocation)

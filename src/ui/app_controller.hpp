@@ -18,6 +18,7 @@ class MediaLoader;
 class OAuthFlow;
 class OfflineDetector;
 class OfflineQueue;
+class ThemeManager;
 
 class AppController : public QObject {
     Q_OBJECT
@@ -34,6 +35,7 @@ class AppController : public QObject {
     Q_PROPERTY(ImageCache* imageCache READ imageCache CONSTANT)
     Q_PROPERTY(MediaLoader* mediaLoader READ mediaLoader CONSTANT)
     Q_PROPERTY(OAuthFlow* oauth READ oauth CONSTANT)
+    Q_PROPERTY(ThemeManager* theme READ theme CONSTANT)
     Q_PROPERTY(QString authUrl READ authUrl NOTIFY authUrlReady)
     
 public:
@@ -72,6 +74,7 @@ public:
     QString authUrl() const { return m_authUrl; }
     bool isOffline() const { return m_isOffline; }
     int pendingActions() const { return m_pendingActions; }
+    ThemeManager* theme() const { return m_theme; }
 
 signals:
     void loadingChanged();
@@ -99,6 +102,7 @@ private:
     OAuthFlow* m_oauth;
     OfflineDetector* m_offlineDetector;
     OfflineQueue* m_offlineQueue;
+    ThemeManager* m_theme;
     PostListModel* m_postModel;
     CommentTreeModel* m_commentModel;
     

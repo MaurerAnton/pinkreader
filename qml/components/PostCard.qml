@@ -4,7 +4,7 @@ import QtQuick.Layouts
 
 Rectangle {
     id: card
-    color: "#1a1a2e"
+    color: app.theme.surface
     height: Math.max(90, contentColumn.height + 20)
 
     property string postTitle: ""
@@ -54,7 +54,7 @@ Rectangle {
                 text: "▲"
                 font.pixelSize: 16
                 opacity: postVoteState === 1 ? 1.0 : 0.4
-                color: "#e94560"
+                color: app.theme.primary
 
                 MouseArea {
                     anchors.fill: parent
@@ -66,7 +66,7 @@ Rectangle {
                 text: postScore > 1000 ? (postScore / 1000).toFixed(1) + "k" : postScore
                 font.pixelSize: 14
                 font.bold: true
-                color: "#ccc"
+                color: app.theme.textSecondary
                 Layout.alignment: Qt.AlignHCenter
             }
 
@@ -87,8 +87,8 @@ Rectangle {
         Rectangle {
             Layout.preferredWidth: 72
             Layout.preferredHeight: 72
-            color: "#0f3460"
-            radius: 4
+            color: app.theme.accent
+            radius: app.theme.radius
             visible: hasThumbnail()
 
             AsyncImage {
@@ -99,33 +99,26 @@ Rectangle {
                 visible: parent.visible
             }
 
-            // Media type indicator
             Rectangle {
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
                 anchors.margins: 2
-                width: 22
-                height: 22
-                radius: 4
-                color: "#e94560"
+                width: 22; height: 22; radius: 4
+                color: app.theme.primary
                 visible: postIsGallery || postIsVideo || postDomain === "v.redd.it" || postDomain === "youtube.com" || postDomain === "youtu.be"
 
                 Text {
                     anchors.centerIn: parent
-                    text: postIsGallery ? "▦" : (postIsVideo || postDomain === "v.redd.it" ? "▶" : "▶")
-                    font.pixelSize: 12
-                    color: "#fff"
+                    text: postIsGallery ? "▦" : "▶"
+                    font.pixelSize: 12; color: "#fff"
                 }
             }
 
-            // Gallery count
             Rectangle {
                 anchors.left: parent.left
                 anchors.bottom: parent.bottom
                 anchors.margins: 2
-                width: countText.width + 8
-                height: 18
-                radius: 3
+                width: countText.width + 8; height: 18; radius: 3
                 color: Qt.rgba(0, 0, 0, 0.7)
                 visible: postIsGallery
 
@@ -133,8 +126,7 @@ Rectangle {
                     id: countText
                     anchors.centerIn: parent
                     text: galleryImages ? galleryImages.length + "📷" : "📷"
-                    font.pixelSize: 10
-                    color: "#fff"
+                    font.pixelSize: 10; color: "#fff"
                 }
             }
 
@@ -150,10 +142,9 @@ Rectangle {
             Layout.fillWidth: true
             spacing: 4
 
-            // Flair
             Rectangle {
                 visible: postFlair !== ""
-                color: "#e94560"
+                color: app.theme.primary
                 radius: 3
                 height: flairLabel.height + 4
                 width: flairLabel.width + 8
@@ -161,88 +152,71 @@ Rectangle {
                 Label {
                     id: flairLabel
                     text: postFlair
-                    font.pixelSize: 11
-                    color: "#fff"
+                    font.pixelSize: 11; color: "#fff"
                     anchors.centerIn: parent
                 }
             }
 
-            // NSFW/Spoiler/Sticky tags
             Row {
                 spacing: 4
                 visible: postNsfw || postSpoiler || postStickied
 
                 Rectangle {
                     visible: postNsfw
-                    color: "#e94560"
-                    radius: 3
+                    color: app.theme.error; radius: 3
                     Label { text: "NSFW"; font.pixelSize: 10; color: "#fff"; padding: 2 }
                 }
                 Rectangle {
                     visible: postSpoiler
-                    color: "#f0a500"
-                    radius: 3
+                    color: app.theme.warning; radius: 3
                     Label { text: "SPOILER"; font.pixelSize: 10; color: "#fff"; padding: 2 }
                 }
                 Rectangle {
                     visible: postStickied
-                    color: "#00b894"
-                    radius: 3
+                    color: app.theme.success; radius: 3
                     Label { text: "📌"; font.pixelSize: 10; color: "#fff"; padding: 2 }
                 }
             }
 
-            // Title
             Label {
                 text: postTitle
                 font.pixelSize: 15
                 font.bold: postStickied
-                color: "#fff"
+                color: app.theme.text
                 wrapMode: Text.Wrap
                 maximumLineCount: 4
                 elide: Text.ElideRight
                 Layout.fillWidth: true
             }
 
-            // Meta row
             RowLayout {
                 spacing: 8
 
                 Label {
                     text: "r/" + postSubreddit + " • u/" + postAuthor + " • " + postDomain
-                    font.pixelSize: 12
-                    color: "#888"
+                    font.pixelSize: 12; color: app.theme.textSecondary
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
 
                 Rectangle {
                     visible: postGilded > 0
-                    color: "#ffd700"
-                    radius: 3
-                    Label {
-                        text: "⭐" + postGilded
-                        font.pixelSize: 11
-                        color: "#000"
-                        padding: 2
-                    }
+                    color: "#ffd700"; radius: 3
+                    Label { text: "⭐" + postGilded; font.pixelSize: 11; color: "#000"; padding: 2 }
                 }
 
                 Label {
                     text: "💬 " + postComments
-                    font.pixelSize: 12
-                    color: "#888"
+                    font.pixelSize: 12; color: app.theme.textSecondary
                 }
             }
         }
     }
 
-    // Separator
     Rectangle {
         anchors.bottom: parent.bottom
-        width: parent.width
-        height: 1
-        color: "#16213e"
+        width: parent.width; height: 1
+        color: app.theme.divider
     }
 
     MouseArea {

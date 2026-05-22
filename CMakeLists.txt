@@ -43,6 +43,7 @@ set(CORE_SOURCES
     src/core/oauth_flow.cpp
     src/core/offline_detector.cpp
     src/core/offline_queue.cpp
+    src/core/theme_manager.cpp
 )
 
 set(CORE_HEADERS
@@ -64,6 +65,7 @@ set(CORE_HEADERS
     src/core/oauth_flow.hpp
     src/core/offline_detector.hpp
     src/core/offline_queue.hpp
+    src/core/theme_manager.hpp
 )
 
 # Source files - UI layer
