@@ -38,6 +38,7 @@ jobs:
             qml6-module-qtquick-templates \
             libqt6sql6-sqlite \
             libqt6network6 \
+            qt6-multimedia-dev \
             libgl1-mesa-dev \
             libxkbcommon-dev \
             cmake \

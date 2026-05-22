@@ -61,7 +61,7 @@ jobs:
             sleep 5
           done
           for i in 1 2 3; do
-            python3 -m aqt install-qt -O ~/Qt linux android 6.6.3 android_arm64_v8a --modules qtnetworkauth qtimageformats && break
+            python3 -m aqt install-qt -O ~/Qt linux android 6.6.3 android_arm64_v8a --modules qtnetworkauth qtimageformats qtmultimedia && break
             sleep 5
           done
 
