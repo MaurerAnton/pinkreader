@@ -169,3 +169,10 @@ install(TARGETS pinkreader
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+# Tests (optional, desktop only)
+option(BUILD_TESTS "Build unit tests" ON)
+if(BUILD_TESTS AND NOT ANDROID)
+    enable_testing()
+    add_subdirectory(tests)
+endif()

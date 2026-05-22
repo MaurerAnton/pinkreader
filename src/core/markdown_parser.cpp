@@ -167,7 +167,7 @@ QString MarkdownParser::parseBlocks(const QString& text) const {
 QString MarkdownParser::parseInline(const QString& text) const {
     QString result = escapeHtml(text);
 
-    // Spoiler: >!text!< (Reddit-specific)
+    // Spoiler: >!text!<
     QRegularExpression spoilRe(">!(.+?)!<");
     result.replace(spoilRe, "<span style='" + spoilerCss() + "'>\\1</span>");
 
@@ -179,7 +179,7 @@ QString MarkdownParser::parseInline(const QString& text) const {
     QRegularExpression boldRe("\\*\\*(.+?)\\*\\*");
     result.replace(boldRe, "<b>\\1</b>");
 
-    // Italic: *text* (but not **)
+    // Italic: *text*
     QRegularExpression italicRe("(?<!\\*)\\*([^*\\n]+)\\*(?!\\*)");
     result.replace(italicRe, "<i>\\1</i>");
 
@@ -195,24 +195,24 @@ QString MarkdownParser::parseInline(const QString& text) const {
     QRegularExpression codeRe("`([^`\\n]+)`");
     result.replace(codeRe, "<code style='background:#2a2a3a;padding:1px 4px;border-radius:3px;font-family:monospace'>\\1</code>");
 
+    // Images: ![alt](url) — must be BEFORE links
+    QRegularExpression imgRe("!\\[([^\\]]*)\\]\\(([^\\)]+)\\)");
+    result.replace(imgRe, "<img src='\\2' alt='\\1' style='max-width:100%'>");
+
     // Links: [text](url)
     QRegularExpression linkRe("\\[([^\\]]+)\\]\\(([^\\)]+)\\)");
     result.replace(linkRe, "<a href='\\2'>\\1</a>");
 
-    // Images: ![alt](url)
-    QRegularExpression imgRe("!\\[([^\\]]*)\\]\\(([^\\)]+)\\)");
-    result.replace(imgRe, "<img src='\\2' alt='\\1' style='max-width:100%'>");
-
-    // Reddit subreddit links: /r/subreddit
-    QRegularExpression subRe("(?<!\")(/r/(\\w+))");
+    // Reddit subreddit links: /r/subreddit (not inside href)
+    QRegularExpression subRe("(?<!['\"=])(/r/(\\w+))");
     result.replace(subRe, "<a href='https://reddit.com\\1'>\\1</a>");
 
     // Reddit user links: /u/username
-    QRegularExpression userRe("(?<!\")(/u/(\\w+))");
+    QRegularExpression userRe("(?<!['\"=])(/u/(\\w+))");
     result.replace(userRe, "<a href='https://reddit.com\\1'>\\1</a>");
 
-    // Auto-link plain URLs
-    QRegularExpression urlRe("(https?://[^\\s<>\"{}|\\\\^`\\[\\]]+)");
+    // Auto-link plain URLs (not inside href/src attributes)
+    QRegularExpression urlRe("(?<!['\"=])(https?://[^\\s<>\"{}|\\\\^`\\[\\]]+)");
     result.replace(urlRe, "<a href='\\1'>\\1</a>");
 
     return result;
