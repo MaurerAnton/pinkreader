@@ -90,6 +90,10 @@ public:
     Q_INVOKABLE bool isPostRead(const QString& postId) const;
     Q_INVOKABLE void copyToClipboard(const QString& text);
     Q_INVOKABLE void shareUrl(const QString& url, const QString& title = {});
+    Q_INVOKABLE void submitPost(const QString& kind, const QString& subreddit,
+                                const QString& title, const QString& url,
+                                const QString& text, const QString& flair);
+    Q_INVOKABLE void loadMultireddit(const QString& username, const QString& multiname);
 
     ImageCache* imageCache() const { return m_imageCache; }
     MediaLoader* mediaLoader() const { return m_mediaLoader; }

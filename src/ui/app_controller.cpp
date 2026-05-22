@@ -210,6 +210,14 @@ void AppController::initialize() {
             emit subredditInfoChanged();
         });
 
+    connect(m_client, &RedditClient::submitComplete, this,
+        [this](bool success, const QString& error) {
+            if (success)
+                emit errorOccurred("Post submitted successfully!");
+            else
+                emit errorOccurred("Submit failed: " + error);
+        });
+
     connect(m_accounts, &AccountManager::accountsChanged, this, [this]() {
         auto* acc = m_accounts->activeAccount();
         m_loggedIn = acc && !acc->isAnonymous;
@@ -445,12 +453,27 @@ void AppController::copyToClipboard(const QString& text) {
 }
 
 void AppController::shareUrl(const QString& url, const QString& title) {
-    // On Android, this opens the share sheet
-    // On desktop, copies to clipboard
     Q_UNUSED(title)
     QString shareText = title.isEmpty() ? url : title + "\n" + url;
     QGuiApplication::clipboard()->setText(shareText);
-    // TODO: use Android Intent.ACTION_SEND for proper sharing
+}
+
+void AppController::submitPost(const QString& kind, const QString& subreddit,
+                                const QString& title, const QString& url,
+                                const QString& text, const QString& flair) {
+    if (!m_loggedIn) {
+        emit errorOccurred("Login required to post");
+        return;
+    }
+    m_client->submitPost(kind, subreddit, title, url, text, flair);
+}
+
+void AppController::loadMultireddit(const QString& username, const QString& multiname) {
+    m_loading = true;
+    emit loadingChanged();
+    m_currentSubreddit = "m/" + username + "/" + multiname;
+    emit currentSubredditChanged();
+    m_client->fetchMultireddit(username, multiname);
 }
 
 } // namespace PinkReader

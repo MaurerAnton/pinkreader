@@ -338,6 +338,72 @@ void RedditClient::fetchSubredditInfo(const QString& subreddit) {
     });
 }
 
+void RedditClient::submitPost(const QString& kind, const QString& subreddit,
+                               const QString& title, const QString& url,
+                               const QString& text, const QString& flair) {
+    if (!m_oauthStrategy || !m_oauthStrategy->isAvailable()) {
+        emit submitComplete(false, "Login required to post");
+        return;
+    }
+
+    QUrl apiUrl("https://oauth.reddit.com/api/submit");
+    QUrlQuery body;
+    body.addQueryItem("api_type", "json");
+    body.addQueryItem("kind", kind);
+    body.addQueryItem("sr", subreddit);
+    body.addQueryItem("title", title);
+    if (kind == "link" && !url.isEmpty())
+        body.addQueryItem("url", url);
+    if (kind == "self" && !text.isEmpty())
+        body.addQueryItem("text", text);
+    if (!flair.isEmpty())
+        body.addQueryItem("flair_text", flair);
+
+    auto* nam = new QNetworkAccessManager(this);
+    QNetworkRequest req(apiUrl);
+    req.setRawHeader("Authorization", ("Bearer " + m_oauthStrategy->accessToken()).toUtf8());
+    req.setRawHeader("User-Agent", "PinkReader/0.1");
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+
+    auto* reply = nam->post(req, body.toString(QUrl::FullyEncoded).toUtf8());
+    connect(reply, &QNetworkReply::finished, this, [this, reply, nam]() {
+        reply->deleteLater();
+        nam->deleteLater();
+        bool ok = reply->error() == QNetworkReply::NoError;
+        emit submitComplete(ok, ok ? QString{} : reply->errorString());
+    });
+}
+
+void RedditClient::fetchMultireddit(const QString& username, const QString& multiname) {
+    setLoading(true);
+    QUrl url("https://www.reddit.com/user/" + username + "/m/" + multiname + ".json");
+
+    auto* nam = new QNetworkAccessManager(this);
+    QNetworkRequest req(url);
+    req.setRawHeader("User-Agent", "PinkReader/0.1");
+
+    auto* reply = nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, nam]() {
+        reply->deleteLater();
+        nam->deleteLater();
+        setLoading(false);
+
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(reply->errorString());
+            return;
+        }
+        QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+        QJsonObject data = doc.object()["data"].toObject();
+        QJsonArray children = data["children"].toArray();
+
+        QVector<Post> posts;
+        for (const auto& child : children) {
+            posts.append(Post::fromJson(child.toObject()["data"].toObject()));
+        }
+        emit postsReady(posts, data["after"].toString());
+    });
+}
+
 void RedditClient::refresh() {
     m_currentRequest.after.clear();
     fetchFrontpage(

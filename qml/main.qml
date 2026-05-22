@@ -120,6 +120,7 @@ ApplicationWindow {
                     ListElement { title: "Frontpage"; icon: "🏠"; action: "frontpage" }
                     ListElement { title: "Popular"; icon: "🔥"; action: "popular" }
                     ListElement { title: "All"; icon: "🌐"; action: "all" }
+                    ListElement { title: "Submit Post"; icon: "✏️"; action: "submit" }
                     ListElement { title: "Discover"; icon: "🔍"; action: "discover" }
                     ListElement { title: "Accounts"; icon: "🔑"; action: "accounts" }
                     ListElement { title: "Settings"; icon: "⚙️"; action: "settings" }
@@ -149,6 +150,7 @@ ApplicationWindow {
                             case "popular": app.loadSubreddit("popular", "hot"); stackView.pop(null); break
                             case "all": app.loadSubreddit("all", "hot"); stackView.pop(null); break
                             case "settings": stackView.push(settingsPage); break
+                            case "submit": stackView.push(submitPage); break
                             case "discover": stackView.push(discoverPage); break
                             case "accounts": stackView.push(accountsPage); break
                         }
@@ -189,6 +191,7 @@ ApplicationWindow {
     Component { id: accountsPage; AccountsPage {} }
     Component { id: discoverPage; DiscoverPage {} }
     Component { id: profilePage; ProfilePage {} }
+    Component { id: submitPage; SubmitPage {} }
     Component { id: postDetailPage; PostDetailPage {} }
 
     Connections {

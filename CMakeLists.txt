@@ -104,6 +104,7 @@ qt_add_qml_module(app
         qml/pages/AccountsPage.qml
         qml/pages/DiscoverPage.qml
         qml/pages/ProfilePage.qml
+        qml/pages/SubmitPage.qml
         qml/components/PostCard.qml
         qml/components/CommentItem.qml
         qml/components/MediaViewer.qml

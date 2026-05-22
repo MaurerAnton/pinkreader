@@ -43,6 +43,10 @@ public:
     Q_INVOKABLE void fetchUserAbout(const QString& username);
     Q_INVOKABLE void fetchUserPosts(const QString& username, const QString& sort = "new");
     Q_INVOKABLE void fetchSubredditInfo(const QString& subreddit);
+    Q_INVOKABLE void submitPost(const QString& kind, const QString& subreddit,
+                                const QString& title, const QString& url,
+                                const QString& text, const QString& flair);
+    Q_INVOKABLE void fetchMultireddit(const QString& username, const QString& multiname);
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void loadMore();
     
@@ -50,6 +54,7 @@ signals:
     void postsReady(const QVector<Post>& posts, const QString& after);
     void commentsReady(const QVector<Comment>& comments);
     void subredditInfoReady(const Subreddit& info);
+    void submitComplete(bool success, const QString& error);
     void subredditsReady(const QVector<Subreddit>& subreddits);
     void userAboutReady(const QString& username, int linkKarma, int commentKarma, const QString& created);
     void userPostsReady(const QVector<Post>& posts, const QString& after);
