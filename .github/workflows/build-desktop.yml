@@ -36,7 +36,6 @@ jobs:
             qml6-module-qtquick-controls \
             qml6-module-qtquick-layouts \
             qml6-module-qtquick-templates \
-            qt6-quickcontrols2-dev \
             libqt6sql6-sqlite \
             libqt6network6 \
             libgl1-mesa-dev \
