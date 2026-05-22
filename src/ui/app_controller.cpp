@@ -8,6 +8,8 @@
 #include "../core/image_cache.hpp"
 #include "../core/media_loader.hpp"
 #include "../core/oauth_flow.hpp"
+#include "../core/offline_detector.hpp"
+#include "../core/offline_queue.hpp"
 
 #include <QStandardPaths>
 #include <QDir>
@@ -22,6 +24,8 @@ AppController::AppController(QObject* parent)
     , m_postModel(new PostListModel(this))
     , m_commentModel(new CommentTreeModel(this))
     , m_oauth(nullptr)
+    , m_offlineDetector(nullptr)
+    , m_offlineQueue(nullptr)
 {
     initialize();
 }
@@ -78,6 +82,43 @@ void AppController::initialize() {
         emit errorOccurred("Login failed: " + err);
     });
 
+    // Setup offline detector
+    m_offlineDetector = new OfflineDetector(this);
+    connect(m_offlineDetector, &OfflineDetector::onlineChanged, this, [this](bool online) {
+        m_isOffline = !online;
+        emit offlineChanged();
+        if (online) {
+            // Flush pending actions when back online
+            if (m_offlineQueue) m_offlineQueue->flush();
+            // Refresh feed
+            refresh();
+        }
+    });
+
+    // Setup offline queue
+    m_offlineQueue = new OfflineQueue(this);
+    m_offlineQueue->setActionHandler([this](const PendingAction& action, auto done) {
+        switch (action.type) {
+        case PendingAction::Vote:
+            m_client->vote(action.fullname, action.direction);
+            break;
+        case PendingAction::Save:
+            action.direction ? m_client->savePost(action.fullname)
+                             : m_client->unsavePost(action.fullname);
+            break;
+        case PendingAction::Hide:
+            m_client->hidePost(action.fullname);
+            break;
+        default:
+            break;
+        }
+        done(true);
+    });
+    connect(m_offlineQueue, &OfflineQueue::queueChanged, this, [this]() {
+        m_pendingActions = m_offlineQueue->pendingCount();
+        emit pendingActionsChanged();
+    });
+
     // Setup API client
     m_client = new RedditClient(this);
     m_client->setCacheManager(m_cache);
@@ -124,6 +165,16 @@ void AppController::loadFrontpage(const QString& sort) {
     m_currentSubreddit.clear();
     m_currentSort = sort;
     emit currentSubredditChanged();
+
+    if (m_isOffline) {
+        auto cached = m_cache->getCachedPosts("_frontpage_" + sort);
+        if (cached) {
+            m_postModel->setPosts(*cached, {});
+        }
+        m_loading = false;
+        emit loadingChanged();
+        return;
+    }
     m_client->fetchFrontpage(sort);
 }
 
@@ -134,6 +185,16 @@ void AppController::loadSubreddit(const QString& subreddit, const QString& sort)
     m_currentSort = sort;
     emit currentSubredditChanged();
     emit currentSortChanged();
+
+    if (m_isOffline) {
+        auto cached = m_cache->getCachedPosts(subreddit + "_" + sort);
+        if (cached) {
+            m_postModel->setPosts(*cached, {});
+        }
+        m_loading = false;
+        emit loadingChanged();
+        return;
+    }
     m_client->fetchSubreddit(subreddit, sort);
 }
 
@@ -154,10 +215,20 @@ void AppController::refresh() {
 }
 
 void AppController::vote(const QString& fullname, int direction) {
+    if (m_isOffline) {
+        m_offlineQueue->enqueueVote(fullname, direction);
+        emit errorOccurred("Vote queued for when online");
+        return;
+    }
     m_client->vote(fullname, direction);
 }
 
 void AppController::savePost(const QString& fullname) {
+    if (m_isOffline) {
+        m_offlineQueue->enqueueSave(fullname, true);
+        emit errorOccurred("Save queued for when online");
+        return;
+    }
     m_client->savePost(fullname);
 }
 
@@ -165,6 +236,13 @@ void AppController::search(const QString& query) {
     m_loading = true;
     emit loadingChanged();
     m_client->search(query, m_currentSubreddit);
+}
+
+void AppController::retryOffline() {
+    m_offlineDetector->checkNow();
+    if (!m_isOffline) {
+        refresh();
+    }
 }
 
 void AppController::login() {

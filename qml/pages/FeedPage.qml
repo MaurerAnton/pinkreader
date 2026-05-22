@@ -34,6 +34,51 @@ Page {
             }
         }
 
+        // Offline banner
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: app.isOffline ? 36 : 0
+            color: "#f0a500"
+            visible: app.isOffline
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 4
+                spacing: 8
+
+                Label {
+                    text: "📡 Offline — showing cached content"
+                    font.pixelSize: 13
+                    color: "#fff"
+                    Layout.fillWidth: true
+                }
+
+                Rectangle {
+                    visible: app.pendingActions > 0
+                    color: "#e94560"
+                    radius: 10
+                    width: pendingLabel.width + 12
+                    height: pendingLabel.height + 4
+
+                    Label {
+                        id: pendingLabel
+                        anchors.centerIn: parent
+                        text: app.pendingActions
+                        font.pixelSize: 11
+                        font.bold: true
+                        color: "#fff"
+                    }
+                }
+
+                Button {
+                    text: "Retry"
+                    font.pixelSize: 12
+                    flat: true
+                    onClicked: app.retryOffline()
+                }
+            }
+        }
+
         // Subreddit info header
         Rectangle {
             visible: app.currentSubreddit !== ""

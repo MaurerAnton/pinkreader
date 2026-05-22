@@ -41,6 +41,8 @@ set(CORE_SOURCES
     src/core/image_cache.cpp
     src/core/media_loader.cpp
     src/core/oauth_flow.cpp
+    src/core/offline_detector.cpp
+    src/core/offline_queue.cpp
 )
 
 set(CORE_HEADERS
@@ -60,6 +62,8 @@ set(CORE_HEADERS
     src/core/image_cache.hpp
     src/core/media_loader.hpp
     src/core/oauth_flow.hpp
+    src/core/offline_detector.hpp
+    src/core/offline_queue.hpp
 )
 
 # Source files - UI layer

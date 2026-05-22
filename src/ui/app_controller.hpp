@@ -16,6 +16,8 @@ class ContentResolver;
 class ImageCache;
 class MediaLoader;
 class OAuthFlow;
+class OfflineDetector;
+class OfflineQueue;
 
 class AppController : public QObject {
     Q_OBJECT
@@ -27,6 +29,8 @@ class AppController : public QObject {
     Q_PROPERTY(QStringList subscribedSubreddits READ subscribedSubreddits NOTIFY subscribedChanged)
     Q_PROPERTY(bool isLoggedIn READ isLoggedIn NOTIFY loginStateChanged)
     Q_PROPERTY(QString currentUser READ currentUser NOTIFY loginStateChanged)
+    Q_PROPERTY(bool isOffline READ isOffline NOTIFY offlineChanged)
+    Q_PROPERTY(int pendingActions READ pendingActions NOTIFY pendingActionsChanged)
     Q_PROPERTY(ImageCache* imageCache READ imageCache CONSTANT)
     Q_PROPERTY(MediaLoader* mediaLoader READ mediaLoader CONSTANT)
     Q_PROPERTY(OAuthFlow* oauth READ oauth CONSTANT)
@@ -60,11 +64,14 @@ public:
     Q_INVOKABLE void clearCache();
     Q_INVOKABLE qint64 cacheSize();
     Q_INVOKABLE void handleOAuthRedirect(const QString& url);
+    Q_INVOKABLE void retryOffline();
 
     ImageCache* imageCache() const { return m_imageCache; }
     MediaLoader* mediaLoader() const { return m_mediaLoader; }
     OAuthFlow* oauth() const { return m_oauth; }
     QString authUrl() const { return m_authUrl; }
+    bool isOffline() const { return m_isOffline; }
+    int pendingActions() const { return m_pendingActions; }
 
 signals:
     void loadingChanged();
@@ -75,6 +82,8 @@ signals:
     void errorOccurred(const QString& message);
     void postSelected(const QString& postId, const QString& subreddit);
     void authUrlReady();
+    void offlineChanged();
+    void pendingActionsChanged();
     
 private:
     void initialize();
@@ -88,6 +97,8 @@ private:
     ImageCache* m_imageCache;
     MediaLoader* m_mediaLoader;
     OAuthFlow* m_oauth;
+    OfflineDetector* m_offlineDetector;
+    OfflineQueue* m_offlineQueue;
     PostListModel* m_postModel;
     CommentTreeModel* m_commentModel;
     
@@ -98,6 +109,8 @@ private:
     bool m_loggedIn = false;
     QString m_currentUser;
     QString m_authUrl;
+    bool m_isOffline = false;
+    int m_pendingActions = 0;
 };
 
 } // namespace PinkReader
