@@ -39,6 +39,17 @@ jobs:
           path: ~/Qt
           key: qt-6.6.3-android-arm64-v8a-v4
 
+      - name: Fix SDK platforms (keep only android-34)
+        run: |
+          for d in $ANDROID_SDK_ROOT/platforms/android-*; do
+            [ "$(basename $d)" = "android-34" ] || rm -rf "$d"
+          done
+          for d in $ANDROID_SDK_ROOT/build-tools/*; do
+            [ "$(basename $d)" = "34.0.0" ] || rm -rf "$d"
+          done
+          echo "Kept platforms:" && ls $ANDROID_SDK_ROOT/platforms/
+          echo "Kept build-tools:" && ls $ANDROID_SDK_ROOT/build-tools/
+
       - name: Install Qt6 (host + Android)
         if: steps.cache-qt.outputs.cache-hit != 'true'
         run: |
