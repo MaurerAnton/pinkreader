@@ -195,6 +195,21 @@ void AppController::initialize() {
             emit loadingChanged();
         });
 
+    connect(m_client, &RedditClient::subredditInfoReady, this,
+        [this](const Subreddit& sr) {
+            QVariantMap map;
+            map["name"] = sr.name;
+            map["title"] = sr.title;
+            map["description"] = sr.publicDescription.isEmpty() ? sr.description : sr.publicDescription;
+            map["subscribers"] = sr.subscriberCount;
+            map["activeUsers"] = sr.activeUserCount;
+            map["over18"] = sr.over18;
+            map["created"] = sr.createdUtc.toString("yyyy-MM-dd");
+            map["iconUrl"] = sr.iconUrl.toString();
+            m_subredditInfo = map;
+            emit subredditInfoChanged();
+        });
+
     connect(m_accounts, &AccountManager::accountsChanged, this, [this]() {
         auto* acc = m_accounts->activeAccount();
         m_loggedIn = acc && !acc->isAnonymous;
@@ -242,6 +257,7 @@ void AppController::loadSubreddit(const QString& subreddit, const QString& sort)
         return;
     }
     m_client->fetchSubreddit(subreddit, sort);
+    m_client->fetchSubredditInfo(subreddit);
 }
 
 void AppController::loadComments(const QString& postId, const QString& subreddit) {

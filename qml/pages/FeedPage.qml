@@ -109,7 +109,7 @@ Page {
                     flat: true
                     visible: app.currentSubreddit !== ""
                     contentItem: Label { text: "ⓘ"; font.pixelSize: 18; color: app.theme.textSecondary }
-                    onClicked: subredditSidebar.load({})
+                    onClicked: subredditSidebar.load(app.subredditInfo)
                 }
             }
         }

@@ -319,6 +319,25 @@ void RedditClient::fetchUserPosts(const QString& username, const QString& sort) 
     });
 }
 
+void RedditClient::fetchSubredditInfo(const QString& subreddit) {
+    QUrl url("https://www.reddit.com/r/" + subreddit + "/about.json");
+
+    auto* nam = new QNetworkAccessManager(this);
+    QNetworkRequest req(url);
+    req.setRawHeader("User-Agent", "PinkReader/0.1");
+
+    auto* reply = nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, nam]() {
+        reply->deleteLater();
+        nam->deleteLater();
+
+        if (reply->error() != QNetworkReply::NoError) return;
+        QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+        Subreddit sr = Subreddit::fromJson(doc.object()["data"].toObject());
+        emit subredditInfoReady(sr);
+    });
+}
+
 void RedditClient::refresh() {
     m_currentRequest.after.clear();
     fetchFrontpage(

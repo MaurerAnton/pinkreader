@@ -21,7 +21,7 @@ Drawer {
     function load(info) {
         if (!info) return
         subredditName = info.name || ""
-        description = info.description || info.publicDescription || ""
+        description = info.description || ""
         title = info.title || ""
         subscribers = info.subscribers || 0
         activeUsers = info.activeUsers || 0

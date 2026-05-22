@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QStringList>
 #include <QSet>
+#include <QVariantMap>
 #include <memory>
 #include "../core/models.hpp"
 #include "post_list_model.hpp"
@@ -49,6 +50,7 @@ class AppController : public QObject {
     Q_PROPERTY(bool showNsfw READ showNsfw WRITE setShowNsfw NOTIFY contentSettingsChanged)
     Q_PROPERTY(bool autoHideRead READ autoHideRead WRITE setAutoHideRead NOTIFY contentSettingsChanged)
     Q_PROPERTY(QStringList readPostIds READ readPostIds NOTIFY contentSettingsChanged)
+    Q_PROPERTY(QVariantMap subredditInfo READ subredditInfo NOTIFY subredditInfoChanged)
     
 public:
     explicit AppController(QObject* parent = nullptr);
@@ -102,6 +104,7 @@ public:
     int profileLinkKarma() const { return m_profileLinkKarma; }
     int profileCommentKarma() const { return m_profileCommentKarma; }
     QString profileCreated() const { return m_profileCreated; }
+    QVariantMap subredditInfo() const { return m_subredditInfo; }
     bool showNsfw() const { return m_showNsfw; }
     void setShowNsfw(bool v);
     bool autoHideRead() const { return m_autoHideRead; }
@@ -121,6 +124,7 @@ signals:
     void pendingActionsChanged();
     void profileUserChanged();
     void contentSettingsChanged();
+    void subredditInfoChanged();
     
 private:
     void initialize();
@@ -158,6 +162,7 @@ private:
     bool m_showNsfw = true;
     bool m_autoHideRead = false;
     QSet<QString> m_readPostIds;
+    QVariantMap m_subredditInfo;
 };
 
 } // namespace PinkReader

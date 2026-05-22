@@ -42,6 +42,7 @@ public:
     Q_INVOKABLE void searchSubreddits(const QString& query);
     Q_INVOKABLE void fetchUserAbout(const QString& username);
     Q_INVOKABLE void fetchUserPosts(const QString& username, const QString& sort = "new");
+    Q_INVOKABLE void fetchSubredditInfo(const QString& subreddit);
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void loadMore();
     
