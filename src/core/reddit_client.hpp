@@ -47,6 +47,8 @@ public:
                                 const QString& title, const QString& url,
                                 const QString& text, const QString& flair);
     Q_INVOKABLE void fetchMultireddit(const QString& username, const QString& multiname);
+    Q_INVOKABLE void fetchSubredditRules(const QString& subreddit);
+    Q_INVOKABLE void report(const QString& thingId, const QString& reason = "Spam");
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void loadMore();
     
@@ -55,6 +57,7 @@ signals:
     void commentsReady(const QVector<Comment>& comments);
     void subredditInfoReady(const Subreddit& info);
     void submitComplete(bool success, const QString& error);
+    void subredditRulesReady(const QVariantList& rules);
     void subredditsReady(const QVector<Subreddit>& subreddits);
     void userAboutReady(const QString& username, int linkKarma, int commentKarma, const QString& created);
     void userPostsReady(const QVector<Post>& posts, const QString& after);

@@ -23,6 +23,7 @@ Rectangle {
     signal copyClicked()
     signal shareClicked()
     signal viewProfileClicked()
+    signal reportClicked()
 
     readonly property int indentPadding: commentDepth * 12
 
@@ -65,6 +66,13 @@ Rectangle {
         MenuItem {
             text: "View Profile"
             onTriggered: viewProfileClicked()
+        }
+
+        MenuSeparator { }
+
+        MenuItem {
+            text: "Report"
+            onTriggered: reportClicked()
         }
     }
 

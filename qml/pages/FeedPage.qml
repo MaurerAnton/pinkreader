@@ -209,6 +209,7 @@ Page {
                 onSaveRequested: app.savePost("t3_" + postId)
                 onCopyLinkRequested: app.copyToClipboard("https://reddit.com" + permalink)
                 onShareRequested: app.shareUrl(url, title)
+                onReportRequested: app.report("t3_" + postId)
             }
 
             footer: Item {

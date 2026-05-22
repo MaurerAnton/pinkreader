@@ -210,6 +210,12 @@ void AppController::initialize() {
             emit subredditInfoChanged();
         });
 
+    connect(m_client, &RedditClient::subredditRulesReady, this,
+        [this](const QVariantList& rules) {
+            m_subredditRules = rules;
+            emit subredditRulesChanged();
+        });
+
     connect(m_client, &RedditClient::submitComplete, this,
         [this](bool success, const QString& error) {
             if (success)
@@ -266,6 +272,7 @@ void AppController::loadSubreddit(const QString& subreddit, const QString& sort)
     }
     m_client->fetchSubreddit(subreddit, sort);
     m_client->fetchSubredditInfo(subreddit);
+    m_client->fetchSubredditRules(subreddit);
 }
 
 void AppController::loadComments(const QString& postId, const QString& subreddit) {
@@ -474,6 +481,10 @@ void AppController::loadMultireddit(const QString& username, const QString& mult
     m_currentSubreddit = "m/" + username + "/" + multiname;
     emit currentSubredditChanged();
     m_client->fetchMultireddit(username, multiname);
+}
+
+void AppController::report(const QString& thingId, const QString& reason) {
+    m_client->report(thingId, reason);
 }
 
 } // namespace PinkReader

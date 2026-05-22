@@ -114,6 +114,7 @@ Page {
                 onCopyClicked: app.copyToClipboard(body)
                 onShareClicked: app.shareUrl("https://reddit.com/r/" + subreddit + "/comments/" + postId + "/_/" + commentId)
                 onViewProfileClicked: stackView.push(profilePage, { "username": author })
+                onReportClicked: app.report("t1_" + commentId)
             }
 
             BusyIndicator {

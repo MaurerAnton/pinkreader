@@ -151,7 +151,64 @@ Drawer {
                     height: 1; Layout.fillWidth: true; color: app.theme.divider
                 }
 
+                // Rules
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: rulesCol.height + 24
+                    visible: rulesRepeater.count > 0
+
+                    ColumnLayout {
+                        id: rulesCol
+                        anchors.left: parent.left; anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 12
+                        spacing: 8
+
+                        Label {
+                            text: "Rules"
+                            font.pixelSize: 16; font.bold: true
+                            color: app.theme.primary
+                        }
+
+                        Repeater {
+                            id: rulesRepeater
+                            model: app.subredditRules
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+
+                                Label {
+                                    text: (index + 1) + "."
+                                    font.pixelSize: 13; font.bold: true
+                                    color: app.theme.textSecondary
+                                    Layout.alignment: Qt.AlignTop
+                                }
+
+                                ColumnLayout {
+                                    spacing: 2
+                                    Layout.fillWidth: true
+
+                                    Label {
+                                        text: modelData.shortName || ""
+                                        font.pixelSize: 14; font.bold: true
+                                        color: app.theme.text
+                                        visible: text !== ""
+                                    }
+                                    Label {
+                                        text: modelData.description || ""
+                                        font.pixelSize: 13; color: app.theme.textSecondary
+                                        wrapMode: Text.Wrap
+                                        visible: text !== ""
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 // Actions
+                Rectangle { height: 1; Layout.fillWidth: true; color: app.theme.divider }
+
                 Button {
                     Layout.fillWidth: true; Layout.preferredHeight: 44
                     flat: true

@@ -43,6 +43,7 @@ Rectangle {
     signal saveRequested()
     signal shareRequested()
     signal copyLinkRequested()
+    signal reportRequested()
 
     function hasThumbnail() {
         return postThumbnail && postThumbnail !== "self" && postThumbnail !== "default" && postThumbnail !== "nsfw"
@@ -321,6 +322,13 @@ Rectangle {
         MenuItem {
             text: "Share"
             onTriggered: shareRequested()
+        }
+
+        MenuSeparator { }
+
+        MenuItem {
+            text: "Report"
+            onTriggered: reportRequested()
         }
     }
 }

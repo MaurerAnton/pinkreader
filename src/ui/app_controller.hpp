@@ -51,6 +51,7 @@ class AppController : public QObject {
     Q_PROPERTY(bool autoHideRead READ autoHideRead WRITE setAutoHideRead NOTIFY contentSettingsChanged)
     Q_PROPERTY(QStringList readPostIds READ readPostIds NOTIFY contentSettingsChanged)
     Q_PROPERTY(QVariantMap subredditInfo READ subredditInfo NOTIFY subredditInfoChanged)
+    Q_PROPERTY(QVariantList subredditRules READ subredditRules NOTIFY subredditRulesChanged)
     
 public:
     explicit AppController(QObject* parent = nullptr);
@@ -94,6 +95,7 @@ public:
                                 const QString& title, const QString& url,
                                 const QString& text, const QString& flair);
     Q_INVOKABLE void loadMultireddit(const QString& username, const QString& multiname);
+    Q_INVOKABLE void report(const QString& thingId, const QString& reason = "Spam");
 
     ImageCache* imageCache() const { return m_imageCache; }
     MediaLoader* mediaLoader() const { return m_mediaLoader; }
@@ -109,6 +111,7 @@ public:
     int profileCommentKarma() const { return m_profileCommentKarma; }
     QString profileCreated() const { return m_profileCreated; }
     QVariantMap subredditInfo() const { return m_subredditInfo; }
+    QVariantList subredditRules() const { return m_subredditRules; }
     bool showNsfw() const { return m_showNsfw; }
     void setShowNsfw(bool v);
     bool autoHideRead() const { return m_autoHideRead; }
@@ -129,6 +132,7 @@ signals:
     void profileUserChanged();
     void contentSettingsChanged();
     void subredditInfoChanged();
+    void subredditRulesChanged();
     
 private:
     void initialize();
@@ -167,6 +171,7 @@ private:
     bool m_autoHideRead = false;
     QSet<QString> m_readPostIds;
     QVariantMap m_subredditInfo;
+    QVariantList m_subredditRules;
 };
 
 } // namespace PinkReader

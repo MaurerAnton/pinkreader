@@ -404,6 +404,63 @@ void RedditClient::fetchMultireddit(const QString& username, const QString& mult
     });
 }
 
+void RedditClient::fetchSubredditRules(const QString& subreddit) {
+    QUrl url("https://www.reddit.com/r/" + subreddit + "/about/rules.json");
+
+    auto* nam = new QNetworkAccessManager(this);
+    QNetworkRequest req(url);
+    req.setRawHeader("User-Agent", "PinkReader/0.1");
+
+    auto* reply = nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, nam]() {
+        reply->deleteLater();
+        nam->deleteLater();
+
+        if (reply->error() != QNetworkReply::NoError) return;
+        QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+        QJsonArray rules = doc.object()["rules"].toArray();
+
+        QVariantList list;
+        for (const auto& r : rules) {
+            QJsonObject rule = r.toObject();
+            QVariantMap map;
+            map["shortName"] = rule["short_name"].toString();
+            map["description"] = rule["description"].toString();
+            list.append(map);
+        }
+        emit subredditRulesReady(list);
+    });
+}
+
+void RedditClient::report(const QString& thingId, const QString& reason) {
+    if (!m_oauthStrategy || !m_oauthStrategy->isAvailable()) {
+        emit errorOccurred("Login required to report");
+        return;
+    }
+
+    QUrl url("https://oauth.reddit.com/api/report");
+    QUrlQuery body;
+    body.addQueryItem("api_type", "json");
+    body.addQueryItem("thing_id", thingId);
+    body.addQueryItem("reason", reason);
+
+    auto* nam = new QNetworkAccessManager(this);
+    QNetworkRequest req(url);
+    req.setRawHeader("Authorization", ("Bearer " + m_oauthStrategy->accessToken()).toUtf8());
+    req.setRawHeader("User-Agent", "PinkReader/0.1");
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+
+    auto* reply = nam->post(req, body.toString(QUrl::FullyEncoded).toUtf8());
+    connect(reply, &QNetworkReply::finished, this, [this, reply, nam]() {
+        reply->deleteLater();
+        nam->deleteLater();
+        if (reply->error() == QNetworkReply::NoError)
+            emit errorOccurred("Reported");
+        else
+            emit errorOccurred("Report failed");
+    });
+}
+
 void RedditClient::refresh() {
     m_currentRequest.after.clear();
     fetchFrontpage(
