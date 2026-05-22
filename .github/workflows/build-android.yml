@@ -11,10 +11,6 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
-env:
-  QT_VERSION: "6.6.3"
-  ANDROID_API: "android-34"
-
 jobs:
   build-android:
     runs-on: ubuntu-24.04
@@ -36,32 +32,25 @@ jobs:
         with:
           packages: 'platforms;android-34 build-tools;34.0.0 ndk;26.3.11579264 cmake;3.22.1'
 
-      - uses: actions/cache@v4
-        id: cache-qt
+      - uses: jurrutti/install-qt-action@v4
         with:
-          path: ~/Qt
-          key: qt-${{ env.QT_VERSION }}-${{ matrix.abi }}-v3
-
-      - name: Install Qt6 (host + Android)
-        if: steps.cache-qt.outputs.cache-hit != 'true'
-        run: |
-          pip3 install aqtinstall
-          mkdir -p ~/Qt
-          aqt install-qt -O ~/Qt linux desktop $QT_VERSION gcc_64
-          aqt install-qt -O ~/Qt linux android $QT_VERSION android_${{ matrix.abi }} \
-            --modules qtnetworkauth qtimageformats
+          version: '6.6.3'
+          host: 'linux'
+          target: 'android'
+          arch: 'android_arm64_v8a'
+          modules: 'qtnetworkauth qtimageformats'
+          cache: true
+          cache-key-prefix: 'qt-android'
 
       - name: Configure CMake
         run: |
-          ~/Qt/$QT_VERSION/android_${{ matrix.abi }}/bin/qt-cmake \
-            -B build-android \
-            -G Ninja \
+          cmake -B build-android -G Ninja \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DANDROID_ABI=${{ matrix.abi }} \
-            -DANDROID_PLATFORM=${{ env.ANDROID_API }} \
+            -DANDROID_PLATFORM=android-34 \
             -DANDROID_NDK=$ANDROID_NDK_HOME \
             -DANDROID_SDK_ROOT=$ANDROID_SDK_ROOT \
-            -DQT_HOST_PATH=$HOME/Qt/$QT_VERSION/gcc_64
+            -DQT_HOST_PATH=${{ env.QT_HOST_PATH || '$HOME/Qt/6.6.3/gcc_64' }}
 
       - name: Build
         run: cmake --build build-android --parallel $(nproc)
@@ -70,6 +59,7 @@ jobs:
         run: cmake --build build-android --target apk
 
       - name: Upload APK artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pinkreader-${{ matrix.abi }}
