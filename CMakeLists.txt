@@ -22,6 +22,7 @@ find_package(Qt6 REQUIRED COMPONENTS
     Sql
     Widgets
     QuickControls2
+    Multimedia
 )
 
 # Source files - Core layer
@@ -108,6 +109,7 @@ qt_add_qml_module(app
         qml/components/SubredditChip.qml
         qml/components/AsyncImage.qml
         qml/components/GalleryView.qml
+        qml/components/VideoPlayer.qml
 )
 
 # Android resources
@@ -145,6 +147,7 @@ target_link_libraries(pinkreader PRIVATE
     Qt6::Sql
     Qt6::Widgets
     Qt6::QuickControls2
+    Qt6::Multimedia
 )
 
 # Platform-specific settings

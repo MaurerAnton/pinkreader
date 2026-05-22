@@ -47,6 +47,11 @@ public:
     Q_INVOKABLE QString imgurDirectUrl(const QString& url);
     Q_INVOKABLE QString redditVideoFallback(const QString& videoUrl, const QString& dashUrl, const QString& hlsUrl);
 
+    // Get best playable URL for video (resolves mp4/stream)
+    Q_INVOKABLE QUrl playableVideoUrl(const QString& postUrl, const QString& domain,
+                                      const QString& videoFallbackUrl, const QString& hlsUrl,
+                                      const QString& dashUrl);
+
 signals:
     void preferLowBandwidthChanged();
 

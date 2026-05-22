@@ -13,16 +13,19 @@ Popup {
     property string mediaType: "image"  // "image", "video", "gif", "gallery"
     property var galleryImages: []
     property string videoSource: ""
+    property string thumbnailUrl: ""
 
     function openMedia(url, type, galleryArr, videoSrc) {
         mediaUrl = url
         mediaType = type || "image"
         galleryImages = galleryArr || []
         videoSource = videoSrc || ""
+        thumbnailUrl = ""
         open()
     }
 
     function closeMedia() {
+        if (videoContent.visible) videoContent.item.stop()
         close()
     }
 
@@ -31,7 +34,21 @@ Popup {
     contentItem: Item {
         anchors.fill: parent
 
-        // Gallery mode
+        // Video player
+        Loader {
+            id: videoContent
+            anchors.fill: parent
+            active: mediaType === "video" || mediaType === "gif"
+            visible: active
+            sourceComponent: VideoPlayer {
+                videoUrl: videoSource || mediaUrl
+                isLooping: mediaType === "gif"
+                autoPlay: true
+                onClosed: closeMedia()
+            }
+        }
+
+        // Gallery + single image
         GalleryView {
             anchors.fill: parent
             images: mediaType === "gallery" ? galleryImages : (mediaUrl ? [mediaUrl] : [])
@@ -39,48 +56,18 @@ Popup {
             onClosed: closeMedia()
         }
 
-        // Video mode
-        Rectangle {
-            anchors.fill: parent
-            color: "#000"
-            visible: mediaType === "video" || mediaType === "gif"
-
-            Label {
-                anchors.centerIn: parent
-                text: mediaType === "gif" ? "🎞️ GIF" : "🎬 Video"
-                font.pixelSize: 24
-                color: "#aaa"
-            }
-
-            Label {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: parent.verticalCenter
-                anchors.topMargin: 30
-                text: mediaUrl
-                font.pixelSize: 12
-                color: "#666"
-                width: parent.width * 0.8
-                wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                elide: Text.ElideMiddle
-            }
-        }
-
         // Close button
         Rectangle {
             anchors.top: parent.top
             anchors.right: parent.right
             anchors.margins: 16
-            width: 40
-            height: 40
-            radius: 20
+            width: 40; height: 40; radius: 20
             color: Qt.rgba(0, 0, 0, 0.5)
             z: 10
 
             Text {
                 anchors.centerIn: parent
-                text: "✕"
-                font.pixelSize: 20
-                color: "#fff"
+                text: "✕"; font.pixelSize: 20; color: "#fff"
             }
 
             MouseArea {

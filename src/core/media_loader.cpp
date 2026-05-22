@@ -157,4 +157,55 @@ QString MediaLoader::redditVideoFallback(const QString& videoUrl,
     return {};
 }
 
+QUrl MediaLoader::playableVideoUrl(const QString& postUrl, const QString& domain,
+                                    const QString& videoFallbackUrl, const QString& hlsUrl,
+                                    const QString& dashUrl) {
+    // v.redd.it: try fallback mp4 first
+    if (domain.contains("v.redd.it")) {
+        QString fallback = QString::fromUtf8(
+            QByteArray::fromBase64(videoFallbackUrl.toUtf8()));
+        if (!fallback.isEmpty()) return QUrl(fallback);
+
+        // Try DASH -> might not play in Qt, but try
+        QString dash = QString::fromUtf8(
+            QByteArray::fromBase64(dashUrl.toUtf8()));
+        if (!dash.isEmpty()) return QUrl(dash);
+
+        // Try HLS
+        QString hls = QString::fromUtf8(
+            QByteArray::fromBase64(hlsUrl.toUtf8()));
+        if (!hls.isEmpty()) return QUrl(hls);
+
+        return QUrl(postUrl + "/DASH_720.mp4");
+    }
+
+    // imgur gifv -> mp4
+    if (postUrl.contains(".gifv")) {
+        QString mp4 = postUrl;
+        mp4.replace(".gifv", ".mp4");
+        return QUrl(mp4);
+    }
+
+    // gfycat / redgifs
+    if (domain.contains("gfycat.com") || domain.contains("redgifs.com")) {
+        return QUrl(postUrl);
+    }
+
+    // YouTube embed URL
+    if (domain.contains("youtube.com") || domain.contains("youtu.be")) {
+        QRegularExpression re("(?:watch\\?v=|youtu\\.be/|embed/)([\\w-]{11})");
+        auto m = re.match(postUrl);
+        if (m.hasMatch()) {
+            return QUrl("https://www.youtube.com/embed/" + m.captured(1) + "?autoplay=1");
+        }
+    }
+
+    // Direct mp4/webm
+    if (postUrl.endsWith(".mp4") || postUrl.endsWith(".webm")) {
+        return QUrl(postUrl);
+    }
+
+    return QUrl(postUrl);
+}
+
 } // namespace PinkReader
