@@ -131,9 +131,15 @@ Page {
             }
 
             onContentYChanged: {
+                // Pull to refresh
                 if (contentY < -100 && !movementEnded) {
                     app.refresh()
                     movementEnded = true
+                }
+                // Infinite scroll: trigger when near bottom
+                var nearBottom = contentHeight - contentY - height < 300
+                if (nearBottom && app.postModel.hasMore && !app.loading && !app.isOffline) {
+                    app.loadMore()
                 }
             }
 
@@ -186,18 +192,10 @@ Page {
             footer: Item {
                 width: postList.width; height: 60
 
-                Button {
+                BusyIndicator {
                     anchors.centerIn: parent
-                    text: app.postModel.hasMore ? "Load more..." : ""
-                    enabled: app.postModel.hasMore
-                    flat: true
-                    contentItem: Label {
-                        text: "Load more..."
-                        color: app.theme.primary
-                        font.pixelSize: 14
-                        visible: app.postModel.hasMore
-                    }
-                    onClicked: app.loadMore()
+                    running: app.postModel.hasMore && !app.isOffline
+                    visible: running
                 }
             }
 

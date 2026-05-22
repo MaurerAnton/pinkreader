@@ -215,6 +215,7 @@ void AppController::loadComments(const QString& postId, const QString& subreddit
 }
 
 void AppController::loadMore() {
+    if (m_loading) return;
     m_loading = true;
     emit loadingChanged();
     m_client->loadMore();
