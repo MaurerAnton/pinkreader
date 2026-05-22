@@ -120,8 +120,9 @@ ApplicationWindow {
                     ListElement { title: "Frontpage"; icon: "🏠"; action: "frontpage" }
                     ListElement { title: "Popular"; icon: "🔥"; action: "popular" }
                     ListElement { title: "All"; icon: "🌐"; action: "all" }
-                    ListElement { title: "Settings"; icon: "⚙️"; action: "settings" }
+                    ListElement { title: "Discover"; icon: "🔍"; action: "discover" }
                     ListElement { title: "Accounts"; icon: "🔑"; action: "accounts" }
+                    ListElement { title: "Settings"; icon: "⚙️"; action: "settings" }
                 }
                 
                 delegate: ItemDelegate {
@@ -148,6 +149,7 @@ ApplicationWindow {
                             case "popular": app.loadSubreddit("popular", "hot"); stackView.pop(null); break
                             case "all": app.loadSubreddit("all", "hot"); stackView.pop(null); break
                             case "settings": stackView.push(settingsPage); break
+                            case "discover": stackView.push(discoverPage); break
                             case "accounts": stackView.push(accountsPage); break
                         }
                     }
@@ -185,6 +187,7 @@ ApplicationWindow {
     Component { id: loginPage; LoginPage {} }
     Component { id: settingsPage; SettingsPage {} }
     Component { id: accountsPage; AccountsPage {} }
+    Component { id: discoverPage; DiscoverPage {} }
     Component { id: postDetailPage; PostDetailPage {} }
 
     Connections {

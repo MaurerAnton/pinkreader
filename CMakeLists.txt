@@ -78,6 +78,7 @@ set(UI_SOURCES
     src/ui/app_controller.cpp
     src/ui/subreddit_model.cpp
     src/ui/account_model.cpp
+    src/ui/subreddit_list_model.cpp
 )
 
 set(UI_HEADERS
@@ -86,6 +87,7 @@ set(UI_HEADERS
     src/ui/app_controller.hpp
     src/ui/subreddit_model.hpp
     src/ui/account_model.hpp
+    src/ui/subreddit_list_model.hpp
 )
 
 # QML resources
@@ -100,6 +102,7 @@ qt_add_qml_module(app
         qml/pages/SettingsPage.qml
         qml/pages/LoginPage.qml
         qml/pages/AccountsPage.qml
+        qml/pages/DiscoverPage.qml
         qml/components/PostCard.qml
         qml/components/CommentItem.qml
         qml/components/MediaViewer.qml

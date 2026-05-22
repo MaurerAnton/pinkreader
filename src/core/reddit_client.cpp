@@ -8,6 +8,13 @@
 #include "cache_manager.hpp"
 #include "account_manager.hpp"
 
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QUrlQuery>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+
 namespace PinkReader {
 
 RedditClient::RedditClient(QObject* parent)
@@ -207,6 +214,42 @@ void RedditClient::search(const QString& query, const QString& subreddit) {
             setError(err);
             emit errorOccurred(err);
         }
+    });
+}
+
+void RedditClient::searchSubreddits(const QString& query) {
+    setLoading(true);
+    QUrl url("https://www.reddit.com/subreddits/search.json");
+    QUrlQuery q;
+    q.addQueryItem("q", query);
+    q.addQueryItem("limit", "50");
+    q.addQueryItem("include_over_18", "true");
+    url.setQuery(q);
+
+    QNetworkRequest req(url);
+    req.setRawHeader("User-Agent", "PinkReader/0.1");
+
+    auto* nam = new QNetworkAccessManager(this);
+    auto* reply = nam->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, nam]() {
+        reply->deleteLater();
+        nam->deleteLater();
+        setLoading(false);
+
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(reply->errorString());
+            return;
+        }
+        QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+        QJsonObject data = doc.object()["data"].toObject();
+        QJsonArray children = data["children"].toArray();
+
+        QVector<Subreddit> results;
+        for (const auto& child : children) {
+            QJsonObject childData = child.toObject()["data"].toObject();
+            results.append(Subreddit::fromJson(childData));
+        }
+        emit subredditsReady(results);
     });
 }
 

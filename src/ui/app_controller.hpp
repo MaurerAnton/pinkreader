@@ -6,6 +6,7 @@
 #include "../core/models.hpp"
 #include "post_list_model.hpp"
 #include "comment_tree_model.hpp"
+#include "subreddit_list_model.hpp"
 
 namespace PinkReader {
 
@@ -38,6 +39,7 @@ class AppController : public QObject {
     Q_PROPERTY(OAuthFlow* oauth READ oauth CONSTANT)
     Q_PROPERTY(ThemeManager* theme READ theme CONSTANT)
     Q_PROPERTY(MarkdownParser* markdown READ markdown CONSTANT)
+    Q_PROPERTY(SubredditListModel* subredditModel READ subredditModel CONSTANT)
     Q_PROPERTY(QString authUrl READ authUrl NOTIFY authUrlReady)
     
 public:
@@ -62,6 +64,7 @@ public:
     Q_INVOKABLE void savePost(const QString& fullname);
     Q_INVOKABLE void submitComment(const QString& parentFullname, const QString& text);
     Q_INVOKABLE void search(const QString& query);
+    Q_INVOKABLE void searchSubreddits(const QString& query, const QString& sort = "relevance");
     Q_INVOKABLE void login();
     Q_INVOKABLE void logout();
     Q_INVOKABLE void addSubscription(const QString& subreddit);
@@ -79,6 +82,7 @@ public:
     int pendingActions() const { return m_pendingActions; }
     ThemeManager* theme() const { return m_theme; }
     MarkdownParser* markdown() const { return m_markdown; }
+    SubredditListModel* subredditModel() const { return m_subredditModel; }
 
 signals:
     void loadingChanged();
@@ -108,6 +112,7 @@ private:
     OfflineQueue* m_offlineQueue;
     ThemeManager* m_theme;
     MarkdownParser* m_markdown;
+    SubredditListModel* m_subredditModel;
     PostListModel* m_postModel;
     CommentTreeModel* m_commentModel;
     

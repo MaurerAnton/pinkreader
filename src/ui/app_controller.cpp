@@ -30,6 +30,7 @@ AppController::AppController(QObject* parent)
     , m_offlineQueue(nullptr)
     , m_theme(nullptr)
     , m_markdown(nullptr)
+    , m_subredditModel(nullptr)
 {
     initialize();
 }
@@ -56,6 +57,9 @@ void AppController::initialize() {
 
     // Setup markdown parser
     m_markdown = new MarkdownParser(this);
+
+    // Setup subreddit search model
+    m_subredditModel = new SubredditListModel(this);
 
     // Setup image cache
     QString imageCachePath = QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
@@ -158,7 +162,13 @@ void AppController::initialize() {
         m_loading = m_client->loading();
         emit loadingChanged();
     });
-    
+
+    connect(m_client, &RedditClient::subredditsReady, this, [this](const QVector<Subreddit>& subs) {
+        m_subredditModel->setSubreddits(subs);
+        m_loading = false;
+        emit loadingChanged();
+    });
+
     connect(m_accounts, &AccountManager::accountsChanged, this, [this]() {
         auto* acc = m_accounts->activeAccount();
         m_loggedIn = acc && !acc->isAnonymous;
@@ -256,6 +266,13 @@ void AppController::search(const QString& query) {
     m_loading = true;
     emit loadingChanged();
     m_client->search(query, m_currentSubreddit);
+}
+
+void AppController::searchSubreddits(const QString& query, const QString& sort) {
+    m_loading = true;
+    m_subredditModel->setSortBy(sort);
+    emit loadingChanged();
+    m_client->searchSubreddits(query);
 }
 
 void AppController::retryOffline() {
