@@ -162,7 +162,12 @@ Page {
                 onPostClicked: {
                     app.loadComments(postId, postSubreddit)
                     stackView.push(postDetailPage, {
-                        "postId": postId, "subreddit": postSubreddit, "postTitle": postTitle
+                        "postId": postId,
+                        "subreddit": postSubreddit,
+                        "postTitle": title,
+                        "postSelfText": selfText || "",
+                        "postAuthor": author,
+                        "postUrl": url
                     })
                 }
                 onThumbnailClicked: {

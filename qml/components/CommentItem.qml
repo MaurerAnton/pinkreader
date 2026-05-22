@@ -82,11 +82,12 @@ Rectangle {
         }
 
         Label {
-            text: commentBody
+            text: app.markdown.toHtml(commentBody)
             font.pixelSize: 14; color: app.theme.text
             wrapMode: Text.Wrap
             Layout.fillWidth: true
             textFormat: Text.StyledText
+            linkColor: app.theme.primary
         }
 
         RowLayout {

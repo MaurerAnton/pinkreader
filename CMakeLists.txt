@@ -44,6 +44,7 @@ set(CORE_SOURCES
     src/core/offline_detector.cpp
     src/core/offline_queue.cpp
     src/core/theme_manager.cpp
+    src/core/markdown_parser.cpp
 )
 
 set(CORE_HEADERS
@@ -66,6 +67,7 @@ set(CORE_HEADERS
     src/core/offline_detector.hpp
     src/core/offline_queue.hpp
     src/core/theme_manager.hpp
+    src/core/markdown_parser.hpp
 )
 
 # Source files - UI layer

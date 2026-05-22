@@ -19,6 +19,7 @@ class OAuthFlow;
 class OfflineDetector;
 class OfflineQueue;
 class ThemeManager;
+class MarkdownParser;
 
 class AppController : public QObject {
     Q_OBJECT
@@ -36,6 +37,7 @@ class AppController : public QObject {
     Q_PROPERTY(MediaLoader* mediaLoader READ mediaLoader CONSTANT)
     Q_PROPERTY(OAuthFlow* oauth READ oauth CONSTANT)
     Q_PROPERTY(ThemeManager* theme READ theme CONSTANT)
+    Q_PROPERTY(MarkdownParser* markdown READ markdown CONSTANT)
     Q_PROPERTY(QString authUrl READ authUrl NOTIFY authUrlReady)
     
 public:
@@ -75,6 +77,7 @@ public:
     bool isOffline() const { return m_isOffline; }
     int pendingActions() const { return m_pendingActions; }
     ThemeManager* theme() const { return m_theme; }
+    MarkdownParser* markdown() const { return m_markdown; }
 
 signals:
     void loadingChanged();
@@ -103,6 +106,7 @@ private:
     OfflineDetector* m_offlineDetector;
     OfflineQueue* m_offlineQueue;
     ThemeManager* m_theme;
+    MarkdownParser* m_markdown;
     PostListModel* m_postModel;
     CommentTreeModel* m_commentModel;
     

@@ -11,6 +11,7 @@
 #include "../core/offline_detector.hpp"
 #include "../core/offline_queue.hpp"
 #include "../core/theme_manager.hpp"
+#include "../core/markdown_parser.hpp"
 
 #include <QStandardPaths>
 #include <QDir>
@@ -28,6 +29,7 @@ AppController::AppController(QObject* parent)
     , m_offlineDetector(nullptr)
     , m_offlineQueue(nullptr)
     , m_theme(nullptr)
+    , m_markdown(nullptr)
 {
     initialize();
 }
@@ -51,6 +53,9 @@ void AppController::initialize() {
 
     // Setup theme
     m_theme = new ThemeManager(this);
+
+    // Setup markdown parser
+    m_markdown = new MarkdownParser(this);
 
     // Setup image cache
     QString imageCachePath = QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
