@@ -40,6 +40,9 @@ Rectangle {
     signal downvote()
     signal thumbnailClicked()
     signal hideRequested()
+    signal saveRequested()
+    signal shareRequested()
+    signal copyLinkRequested()
 
     function hasThumbnail() {
         return postThumbnail && postThumbnail !== "self" && postThumbnail !== "default" && postThumbnail !== "nsfw"
@@ -276,6 +279,48 @@ Rectangle {
 
         onClicked: {
             if (!dragging) postClicked()
+        }
+
+        onPressAndHold: {
+            if (!dragging) contextMenu.popup()
+        }
+    }
+
+    Menu {
+        id: contextMenu
+        modal: true
+
+        MenuItem {
+            text: postVoteState === 1 ? "Remove Upvote" : "Upvote ▲"
+            onTriggered: upvote()
+        }
+        MenuItem {
+            text: postVoteState === -1 ? "Remove Downvote" : "Downvote ▼"
+            onTriggered: downvote()
+        }
+
+        MenuSeparator { }
+
+        MenuItem {
+            text: "Save"
+            onTriggered: saveRequested()
+        }
+
+        MenuItem {
+            text: "Hide"
+            onTriggered: hideRequested()
+        }
+
+        MenuSeparator { }
+
+        MenuItem {
+            text: "Copy Link"
+            onTriggered: copyLinkRequested()
+        }
+
+        MenuItem {
+            text: "Share"
+            onTriggered: shareRequested()
         }
     }
 }

@@ -17,6 +17,8 @@
 #include <QDir>
 #include <QSettings>
 #include <QFile>
+#include <QClipboard>
+#include <QGuiApplication>
 #include <QJsonDocument>
 #include <QJsonArray>
 
@@ -420,6 +422,19 @@ bool AppController::isPostRead(const QString& postId) const {
 
 QStringList AppController::readPostIds() const {
     return QStringList(m_readPostIds.begin(), m_readPostIds.end());
+}
+
+void AppController::copyToClipboard(const QString& text) {
+    QGuiApplication::clipboard()->setText(text);
+}
+
+void AppController::shareUrl(const QString& url, const QString& title) {
+    // On Android, this opens the share sheet
+    // On desktop, copies to clipboard
+    Q_UNUSED(title)
+    QString shareText = title.isEmpty() ? url : title + "\n" + url;
+    QGuiApplication::clipboard()->setText(shareText);
+    // TODO: use Android Intent.ACTION_SEND for proper sharing
 }
 
 } // namespace PinkReader

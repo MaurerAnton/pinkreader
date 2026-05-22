@@ -20,6 +20,9 @@ Rectangle {
     property string commentId: ""
 
     signal replyClicked()
+    signal copyClicked()
+    signal shareClicked()
+    signal viewProfileClicked()
 
     readonly property int indentPadding: commentDepth * 12
 
@@ -36,10 +39,33 @@ Rectangle {
         visible: commentDepth > 0 && !collapsed
     }
 
-    // Tap to collapse
+    // Tap to collapse, long-press for menu
     MouseArea {
         anchors.fill: parent
         onClicked: collapsed = !collapsed
+        onPressAndHold: commentMenu.popup()
+    }
+
+    Menu {
+        id: commentMenu
+        modal: true
+
+        MenuItem {
+            text: "Copy Text"
+            onTriggered: copyClicked()
+        }
+
+        MenuItem {
+            text: "Share"
+            onTriggered: shareClicked()
+        }
+
+        MenuSeparator { }
+
+        MenuItem {
+            text: "View Profile"
+            onTriggered: viewProfileClicked()
+        }
     }
 
     ColumnLayout {

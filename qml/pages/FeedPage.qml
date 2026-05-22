@@ -206,6 +206,9 @@ Page {
                     app.markPostRead(postId)
                     app.hidePost(postId)
                 }
+                onSaveRequested: app.savePost("t3_" + postId)
+                onCopyLinkRequested: app.copyToClipboard("https://reddit.com" + permalink)
+                onShareRequested: app.shareUrl(url, title)
             }
 
             footer: Item {

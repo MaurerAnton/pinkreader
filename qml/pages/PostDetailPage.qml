@@ -111,6 +111,9 @@ Page {
                     replyField.placeholder = "Reply to " + author
                     replyField.forceActiveFocus()
                 }
+                onCopyClicked: app.copyToClipboard(body)
+                onShareClicked: app.shareUrl("https://reddit.com/r/" + subreddit + "/comments/" + postId + "/_/" + commentId)
+                onViewProfileClicked: stackView.push(profilePage, { "username": author })
             }
 
             BusyIndicator {
