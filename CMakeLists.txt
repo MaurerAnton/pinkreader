@@ -40,6 +40,7 @@ set(CORE_SOURCES
     src/core/content_resolver.cpp
     src/core/image_cache.cpp
     src/core/media_loader.cpp
+    src/core/oauth_flow.cpp
 )
 
 set(CORE_HEADERS
@@ -58,6 +59,7 @@ set(CORE_HEADERS
     src/core/content_resolver.hpp
     src/core/image_cache.hpp
     src/core/media_loader.hpp
+    src/core/oauth_flow.hpp
 )
 
 # Source files - UI layer

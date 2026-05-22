@@ -19,6 +19,7 @@ RedditClient::RedditClient(QObject* parent)
 {
     // Build strategy chain: try authenticated first, then fall through
     auto* oauth = new OAuthJsonStrategy(this);
+    m_oauthStrategy = oauth;
     auto* anon = new AnonymousJsonStrategy(this);
     auto* rss = new RssStrategy(this);
     auto* alt = new AltFrontendStrategy(this);
@@ -182,14 +183,11 @@ void RedditClient::unsavePost(const QString& fullname) {
 }
 
 void RedditClient::hidePost(const QString& fullname) {
-    // Only available via OAuth
-    for (auto* s : {static_cast<ApiStrategy*>(findChild<OAuthJsonStrategy*>())}) {
-        if (s) {
-            s->hide(fullname, [this](bool ok, auto err) {
-                if (!ok) emit errorOccurred(err);
-            });
-            return;
-        }
+    if (m_oauthStrategy && m_oauthStrategy->isAvailable()) {
+        m_oauthStrategy->hide(fullname, [this](bool ok, auto err) {
+            if (!ok) emit errorOccurred(err);
+        });
+        return;
     }
     emit errorOccurred("Hide requires authentication");
 }
@@ -225,6 +223,12 @@ void RedditClient::loadMore() {
         fetchFrontpage("hot", m_currentRequest.after);
     } else {
         fetchSubreddit(m_currentRequest.subreddit, "hot", m_currentRequest.after);
+    }
+}
+
+void RedditClient::updateAuthToken(const QString& token) {
+    if (m_oauthStrategy) {
+        m_oauthStrategy->setTokens(token, {});
     }
 }
 

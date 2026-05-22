@@ -100,8 +100,8 @@ Page {
                 onSubredditClicked: {
                     app.loadSubreddit(postSubreddit, "hot")
                 }
-                onUpvote: app.vote(name, 1)
-                onDownvote: app.vote(name, -1)
+                onUpvote: app.vote("t3_" + postId, 1)
+                onDownvote: app.vote("t3_" + postId, -1)
             }
 
             footer: Item {

@@ -27,6 +27,7 @@ public:
     void setAccountManager(AccountManager* mgr) { m_accountManager = mgr; }
     void setCacheManager(CacheManager* cache) { m_cache = cache; }
     void setContentResolver(ContentResolver* resolver) { m_contentResolver = resolver; }
+    void updateAuthToken(const QString& token);
     
     Q_INVOKABLE void fetchFrontpage(const QString& sort = "hot", const QString& after = "");
     Q_INVOKABLE void fetchSubreddit(const QString& subreddit, const QString& sort = "hot", const QString& after = "");
@@ -59,6 +60,7 @@ private:
     CacheManager* m_cache;
     ContentResolver* m_contentResolver;
     AccountManager* m_accountManager;
+    class OAuthJsonStrategy* m_oauthStrategy;
     FeedRequest m_currentRequest;
     bool m_loading = false;
     QString m_error;

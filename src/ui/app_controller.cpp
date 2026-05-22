@@ -7,6 +7,7 @@
 #include "../core/content_resolver.hpp"
 #include "../core/image_cache.hpp"
 #include "../core/media_loader.hpp"
+#include "../core/oauth_flow.hpp"
 
 #include <QStandardPaths>
 #include <QDir>
@@ -20,6 +21,7 @@ AppController::AppController(QObject* parent)
     : QObject(parent)
     , m_postModel(new PostListModel(this))
     , m_commentModel(new CommentTreeModel(this))
+    , m_oauth(nullptr)
 {
     initialize();
 }
@@ -48,6 +50,33 @@ void AppController::initialize() {
 
     // Setup media loader
     m_mediaLoader = new MediaLoader(this);
+
+    // Setup OAuth flow
+    m_oauth = new OAuthFlow(this);
+    connect(m_oauth, &OAuthFlow::authUrlReady, this, [this]() {
+        m_authUrl = m_oauth->authUrl();
+        emit authUrlReady();
+    });
+    connect(m_oauth, &OAuthFlow::authSuccess, this, [this](const QString& accessToken,
+                                                          const QString& refreshToken,
+                                                          int expiresIn) {
+        m_client->updateAuthToken(accessToken);
+        Account acc;
+        acc.username = "user"; // Will be updated after fetching identity
+        acc.accessToken = accessToken;
+        acc.refreshToken = refreshToken;
+        acc.expiresIn = expiresIn;
+        acc.isAnonymous = false;
+        m_accounts->addAccount(acc);
+        m_loggedIn = true;
+        // Fetch username
+        // For now, set a placeholder
+        m_currentUser = "logged_in";
+        emit loginStateChanged();
+    });
+    connect(m_oauth, &OAuthFlow::authError, this, [this](const QString& err) {
+        emit errorOccurred("Login failed: " + err);
+    });
 
     // Setup API client
     m_client = new RedditClient(this);
@@ -139,15 +168,23 @@ void AppController::search(const QString& query) {
 }
 
 void AppController::login() {
-    emit errorOccurred("OAuth login flow: open browser for authorization");
-    // In production: open auth URL in browser, catch redirect
+    if (m_oauth) {
+        m_oauth->startAuth();
+    }
 }
 
 void AppController::logout() {
     m_accounts->removeAccount(m_currentUser);
+    m_client->updateAuthToken({});
     m_loggedIn = false;
     m_currentUser.clear();
     emit loginStateChanged();
+}
+
+void AppController::handleOAuthRedirect(const QString& url) {
+    if (m_oauth) {
+        m_oauth->handleRedirect(QUrl(url));
+    }
 }
 
 void AppController::addSubscription(const QString& subreddit) {

@@ -15,6 +15,7 @@ class AccountManager;
 class ContentResolver;
 class ImageCache;
 class MediaLoader;
+class OAuthFlow;
 
 class AppController : public QObject {
     Q_OBJECT
@@ -28,6 +29,8 @@ class AppController : public QObject {
     Q_PROPERTY(QString currentUser READ currentUser NOTIFY loginStateChanged)
     Q_PROPERTY(ImageCache* imageCache READ imageCache CONSTANT)
     Q_PROPERTY(MediaLoader* mediaLoader READ mediaLoader CONSTANT)
+    Q_PROPERTY(OAuthFlow* oauth READ oauth CONSTANT)
+    Q_PROPERTY(QString authUrl READ authUrl NOTIFY authUrlReady)
     
 public:
     explicit AppController(QObject* parent = nullptr);
@@ -56,10 +59,13 @@ public:
     Q_INVOKABLE void removeSubscription(const QString& subreddit);
     Q_INVOKABLE void clearCache();
     Q_INVOKABLE qint64 cacheSize();
+    Q_INVOKABLE void handleOAuthRedirect(const QString& url);
 
     ImageCache* imageCache() const { return m_imageCache; }
     MediaLoader* mediaLoader() const { return m_mediaLoader; }
-    
+    OAuthFlow* oauth() const { return m_oauth; }
+    QString authUrl() const { return m_authUrl; }
+
 signals:
     void loadingChanged();
     void currentSubredditChanged();
@@ -68,6 +74,7 @@ signals:
     void loginStateChanged();
     void errorOccurred(const QString& message);
     void postSelected(const QString& postId, const QString& subreddit);
+    void authUrlReady();
     
 private:
     void initialize();
@@ -80,6 +87,7 @@ private:
     ContentResolver* m_contentResolver;
     ImageCache* m_imageCache;
     MediaLoader* m_mediaLoader;
+    OAuthFlow* m_oauth;
     PostListModel* m_postModel;
     CommentTreeModel* m_commentModel;
     
@@ -89,6 +97,7 @@ private:
     QStringList m_subscribed;
     bool m_loggedIn = false;
     QString m_currentUser;
+    QString m_authUrl;
 };
 
 } // namespace PinkReader
