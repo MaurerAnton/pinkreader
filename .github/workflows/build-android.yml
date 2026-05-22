@@ -32,25 +32,39 @@ jobs:
         with:
           packages: 'platforms;android-34 build-tools;34.0.0 ndk;26.3.11579264 cmake;3.22.1'
 
-      - uses: jurrutti/install-qt-action@v4
+      - name: Cache Qt
+        uses: actions/cache@v4
+        id: cache-qt
         with:
-          version: '6.6.3'
-          host: 'linux'
-          target: 'android'
-          arch: 'android_arm64_v8a'
-          modules: 'qtnetworkauth qtimageformats'
-          cache: true
-          cache-key-prefix: 'qt-android'
+          path: ~/Qt
+          key: qt-6.6.3-android-arm64-v8a-v4
+
+      - name: Install Qt6 (host + Android)
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        run: |
+          python3 -m pip install --user aqtinstall
+          mkdir -p ~/Qt
+          # Try multiple times - aqt can fail on network issues
+          for i in 1 2 3; do
+            python3 -m aqt install-qt -O ~/Qt linux desktop 6.6.3 gcc_64 && break
+            sleep 5
+          done
+          for i in 1 2 3; do
+            python3 -m aqt install-qt -O ~/Qt linux android 6.6.3 android_arm64_v8a --modules qtnetworkauth qtimageformats && break
+            sleep 5
+          done
 
       - name: Configure CMake
         run: |
-          cmake -B build-android -G Ninja \
+          ~/Qt/6.6.3/android_arm64_v8a/bin/qt-cmake \
+            -B build-android \
+            -G Ninja \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
             -DANDROID_ABI=${{ matrix.abi }} \
             -DANDROID_PLATFORM=android-34 \
             -DANDROID_NDK=$ANDROID_NDK_HOME \
             -DANDROID_SDK_ROOT=$ANDROID_SDK_ROOT \
-            -DQT_HOST_PATH=${{ env.QT_HOST_PATH || '$HOME/Qt/6.6.3/gcc_64' }}
+            -DQT_HOST_PATH=$HOME/Qt/6.6.3/gcc_64
 
       - name: Build
         run: cmake --build build-android --parallel $(nproc)

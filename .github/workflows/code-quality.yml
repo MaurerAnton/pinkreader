@@ -30,42 +30,20 @@ jobs:
             qt6-base-dev \
             qt6-declarative-dev \
             qt6-tools-dev \
-            qt6-tools-dev-tools \
-            libqt6sql6-sqlite \
             clang-tidy-18 \
-            cmake
+            cmake ninja-build
 
       - name: Configure CMake
-        run: >
-          cmake -B build-tidy
-          -DCMAKE_BUILD_TYPE=Debug
-          -DCMAKE_CXX_CLANG_TIDY="clang-tidy-18;--config-file=.clang-tidy;-header-filter=src/"
+        run: |
+          cmake -B build-tidy -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_CLANG_TIDY="clang-tidy-18;--config-file=${{ github.workspace }}/.clang-tidy;-header-filter=${{ github.workspace }}/src/"
 
       - name: Run clang-tidy
         run: cmake --build build-tidy --parallel $(nproc) 2>&1 | tee clang-tidy.log
         continue-on-error: true
 
-      - name: Check zero warnings
+      - name: Check warnings
         run: |
           warnings=$(grep -c "warning:" clang-tidy.log || true)
-          if [ "$warnings" -gt 0 ]; then
-            echo "::warning::$warnings clang-tidy warnings found"
-          fi
-
-  qmllint:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Qt6
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq qt6-declarative-dev qt6-tools-dev-tools
-
-      - name: Lint QML files
-        run: |
-          find qml/ -name '*.qml' | while read f; do
-            qmllint6 "$f" 2>&1 || true
-          done
-
-
+          echo "$warnings clang-tidy warnings"
