@@ -1,0 +1,62 @@
+# Build artifacts
+build/
+build-*/
+*.o
+*.obj
+*.so
+*.a
+*.dll
+*.dylib
+*.exe
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+
+# Qt Creator
+*.pro.user
+*.pro.user.*
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake-build-*/
+cmake_install.cmake
+Makefile
+CTestTestfile.cmake
+
+# Android
+android/build/
+android/libs/
+android/obj/
+android/.gradle/
+android/local.properties
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# App data
+# (accounts.json is user data, not tracked)
+accounts.json
+subscriptions.json
+cache.db
+
+# Python venv (for build scripts)
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Project-specific
+temp/
+*.log
+debug/

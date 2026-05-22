@@ -1,0 +1,56 @@
+# clang-tidy config for PinkReader
+
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  cppcoreguidelines-*,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-special-member-functions,
+  -cppcoreguidelines-owning-memory,
+  misc-*,
+  -misc-non-private-member-variables-in-classes,
+  -misc-include-cleaner,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  -modernize-use-auto,
+  -modernize-avoid-c-arrays,
+  performance-*,
+  -performance-avoid-endl,
+  portability-*,
+  readability-*,
+  -readability-magic-numbers,
+  -readability-function-cognitive-complexity,
+  -readability-identifier-length,
+  -readability-identifier-naming,
+  -readability-redundant-access-specifiers,
+  -readability-implicit-bool-conversion
+
+CheckOptions:
+  - key: bugprone-argument-comment.CommentBoolLiterals
+    value: 'true'
+  - key: bugprone-argument-comment.CommentIntegerLiterals
+    value: 'true'
+  - key: bugprone-argument-comment.CommentStringLiterals
+    value: 'true'
+  - key: bugprone-argument-comment.StrictMode
+    value: 'true'
+  - key: cppcoreguidelines-special-member-functions.AllowMissingMoveFunctions
+    value: 'true'
+  - key: misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
+    value: 'true'
+  - key: modernize-use-override.AllowOverrideAndFinal
+    value: 'true'
+  - key: modernize-use-override.FinalOverride
+    value: 'true'
+  - key: readability-implicit-bool-conversion.AllowPointerConditions
+    value: 'true'
+
+HeaderFilterRegex: 'src/.*'
+
+FormatStyle: file
+UseColor: true
