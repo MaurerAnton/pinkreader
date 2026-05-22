@@ -105,12 +105,92 @@ Page {
                 commentAuthor: author; commentBody: body; commentScore: score
                 commentDepth: depth; commentCreated: created; commentStickied: stickied
                 commentIsSubmitter: isSubmitter; commentDistinguished: distinguished
-                commentGilded: gilded
+                commentGilded: gilded; replyCount: replyCount; commentId: commentId
+                onReplyClicked: {
+                    replyField.parentId = "t1_" + commentId
+                    replyField.placeholder = "Reply to " + author
+                    replyField.forceActiveFocus()
+                }
             }
 
             BusyIndicator {
                 anchors.centerIn: parent
                 running: app.loading; visible: app.loading
+            }
+        }
+
+        // Reply bar
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: replyField.active ? 100 : 48
+            color: app.theme.surface
+            Behavior on Layout.preferredHeight { NumberAnimation { duration: 200 } }
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 8
+                spacing: 4
+
+                TextArea {
+                    id: replyField
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    visible: active
+                    placeholderText: "Add a comment..."
+                    placeholderTextColor: app.theme.textSecondary
+                    color: app.theme.text
+                    font.pixelSize: 14
+                    wrapMode: TextArea.Wrap
+                    background: Rectangle {
+                        color: app.theme.accent; radius: app.theme.radius
+                    }
+
+                    property string parentId: "t3_" + postId
+                    property bool active: false
+
+                    onActiveFocusChanged: {
+                        if (activeFocus) active = true
+                    }
+                }
+
+                RowLayout {
+                    visible: replyField.active
+                    spacing: 8
+
+                    Item { Layout.fillWidth: true }
+
+                    Button {
+                        text: "Cancel"
+                        flat: true
+                        contentItem: Label { text: "Cancel"; color: app.theme.textSecondary }
+                        onClicked: {
+                            replyField.active = false
+                            replyField.text = ""
+                            replyField.focus = false
+                        }
+                    }
+
+                    Button {
+                        text: "Post"
+                        enabled: replyField.text.trim().length > 0
+                        contentItem: Label {
+                            text: "Post"
+                            color: parent.enabled ? "#fff" : app.theme.textSecondary
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                        background: Rectangle {
+                            color: parent.enabled ? app.theme.primary : app.theme.accent
+                            radius: app.theme.radius
+                        }
+                        onClicked: {
+                            app.submitComment(replyField.parentId, replyField.text)
+                            replyField.text = ""
+                            replyField.active = false
+                            replyField.parentId = "t3_" + postId
+                            replyField.placeholder = "Add a comment..."
+                        }
+                    }
+                }
             }
         }
     }

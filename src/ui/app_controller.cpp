@@ -243,6 +243,15 @@ void AppController::savePost(const QString& fullname) {
     m_client->savePost(fullname);
 }
 
+void AppController::submitComment(const QString& parentFullname, const QString& text) {
+    if (!m_loggedIn) {
+        emit errorOccurred("Log in to comment");
+        return;
+    }
+    if (text.trimmed().isEmpty()) return;
+    m_client->submitComment(parentFullname, text);
+}
+
 void AppController::search(const QString& query) {
     m_loading = true;
     emit loadingChanged();

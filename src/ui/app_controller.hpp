@@ -60,6 +60,7 @@ public:
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void vote(const QString& fullname, int direction);
     Q_INVOKABLE void savePost(const QString& fullname);
+    Q_INVOKABLE void submitComment(const QString& parentFullname, const QString& text);
     Q_INVOKABLE void search(const QString& query);
     Q_INVOKABLE void login();
     Q_INVOKABLE void logout();

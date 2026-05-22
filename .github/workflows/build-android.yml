@@ -37,7 +37,7 @@ jobs:
         id: cache-qt
         with:
           path: ~/Qt
-          key: qt-6.6.3-android-arm64-v8a-v4
+          key: qt-6.6.3-android-arm64-v8a-v5
 
       - name: Fix SDK platforms (keep only android-34)
         run: |

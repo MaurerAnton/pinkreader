@@ -16,16 +16,30 @@ Rectangle {
     property bool commentIsSubmitter: false
     property string commentDistinguished: ""
     property int commentGilded: 0
+    property int replyCount: 0
+    property string commentId: ""
+
+    signal replyClicked()
 
     readonly property int indentPadding: commentDepth * 12
+
+    // Collapse state
+    property bool collapsed: false
 
     Rectangle {
         anchors.left: parent.left
         anchors.leftMargin: indentPadding
         anchors.top: parent.top
-        width: 2; height: parent.height - 8
+        width: 2
+        height: parent.height - 8
         color: Qt.rgba(233/255, 69/255, 96/255, Math.max(0.1, (10 - commentDepth) * 0.1))
-        visible: commentDepth > 0
+        visible: commentDepth > 0 && !collapsed
+    }
+
+    // Tap to collapse
+    MouseArea {
+        anchors.fill: parent
+        onClicked: collapsed = !collapsed
     }
 
     ColumnLayout {
@@ -35,66 +49,146 @@ Rectangle {
         anchors.top: parent.top; anchors.topMargin: 8
         spacing: 4
 
-        RowLayout {
-            spacing: 6
-
-            Label {
-                text: commentAuthor
-                font.pixelSize: 13
-                font.bold: commentIsSubmitter
-                color: commentIsSubmitter ? app.theme.success :
-                       commentDistinguished === "moderator" ? app.theme.success :
-                       commentDistinguished === "admin" ? app.theme.primary : app.theme.textSecondary
-            }
-
-            Rectangle {
-                visible: commentIsSubmitter
-                color: app.theme.success; radius: 3
-                Label { text: "OP"; font.pixelSize: 10; font.bold: true; color: "#fff"; padding: 2 }
-            }
-            Rectangle {
-                visible: commentDistinguished === "moderator"
-                color: app.theme.success; radius: 3
-                Label { text: "MOD"; font.pixelSize: 10; font.bold: true; color: "#fff"; padding: 2 }
-            }
-            Rectangle {
-                visible: commentDistinguished === "admin"
-                color: app.theme.primary; radius: 3
-                Label { text: "ADMIN"; font.pixelSize: 10; font.bold: true; color: "#fff"; padding: 2 }
-            }
-            Rectangle {
-                visible: commentStickied
-                color: app.theme.success; radius: 3
-                Label { text: "📌"; font.pixelSize: 10; padding: 2 }
-            }
-
-            Label {
-                text: commentScore + " pts"
-                font.pixelSize: 12; color: app.theme.textSecondary
-                Layout.fillWidth: true
-            }
-
-            Rectangle {
-                visible: commentGilded > 0
-                color: "#ffd700"; radius: 3
-                Label { text: "⭐" + commentGilded; font.pixelSize: 10; color: "#000"; padding: 2 }
-            }
-        }
-
-        Label {
-            text: app.markdown.toHtml(commentBody)
-            font.pixelSize: 14; color: app.theme.text
-            wrapMode: Text.Wrap
+        // Collapsed view
+        Rectangle {
+            visible: collapsed
             Layout.fillWidth: true
-            textFormat: Text.StyledText
-            linkColor: app.theme.primary
+            height: 32; radius: 4
+            color: app.theme.accent
+
+            RowLayout {
+                anchors.fill: parent; anchors.margins: 6
+                spacing: 8
+
+                Label {
+                    text: commentAuthor
+                    font.pixelSize: 13; font.bold: true
+                    color: commentIsSubmitter ? app.theme.success :
+                           commentDistinguished ? app.theme.primary :
+                           app.theme.textSecondary
+                }
+
+                Label {
+                    text: commentScore + " pts"
+                    font.pixelSize: 12; color: app.theme.textSecondary
+                }
+
+                Item { Layout.fillWidth: true }
+
+                Label {
+                    text: "[+]"
+                    font.pixelSize: 14; color: app.theme.primary
+                }
+            }
         }
 
-        RowLayout {
-            spacing: 12
-            Label { text: "▲"; font.pixelSize: 14; color: app.theme.textSecondary }
-            Label { text: "▼"; font.pixelSize: 14; color: app.theme.textSecondary }
-            Label { text: "↩ Reply"; font.pixelSize: 12; color: app.theme.textSecondary }
+        // Expanded view
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: collapsed ? 0 : fullContent.height
+            visible: !collapsed
+            clip: true
+
+            Behavior on Layout.preferredHeight {
+                NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+            }
+
+            ColumnLayout {
+                id: fullContent
+                width: parent.width
+                spacing: 4
+
+                // Author + badges
+                RowLayout {
+                    spacing: 6
+
+                    Label {
+                        text: commentAuthor
+                        font.pixelSize: 13
+                        font.bold: commentIsSubmitter
+                        color: commentIsSubmitter ? app.theme.success :
+                               commentDistinguished === "moderator" ? app.theme.success :
+                               commentDistinguished === "admin" ? app.theme.primary :
+                               app.theme.textSecondary
+                    }
+
+                    Rectangle {
+                        visible: commentIsSubmitter
+                        color: app.theme.success; radius: 3; height: 16
+                        Label { text: "OP"; font.pixelSize: 10; font.bold: true; color: "#fff"; padding: 2 }
+                    }
+                    Rectangle {
+                        visible: commentDistinguished === "moderator"
+                        color: app.theme.success; radius: 3; height: 16
+                        Label { text: "MOD"; font.pixelSize: 10; font.bold: true; color: "#fff"; padding: 2 }
+                    }
+                    Rectangle {
+                        visible: commentDistinguished === "admin"
+                        color: app.theme.primary; radius: 3; height: 16
+                        Label { text: "ADMIN"; font.pixelSize: 10; font.bold: true; color: "#fff"; padding: 2 }
+                    }
+                    Rectangle {
+                        visible: commentStickied
+                        color: app.theme.success; radius: 3; height: 16
+                        Label { text: "📌"; font.pixelSize: 10; padding: 2 }
+                    }
+
+                    Label {
+                        text: commentScore + " pts"
+                        font.pixelSize: 12; color: app.theme.textSecondary
+                        Layout.fillWidth: true
+                    }
+
+                    Rectangle {
+                        visible: commentGilded > 0
+                        color: "#ffd700"; radius: 3; height: 16
+                        Label { text: "⭐" + commentGilded; font.pixelSize: 10; color: "#000"; padding: 2 }
+                    }
+                }
+
+                // Body
+                Label {
+                    text: app.markdown.toHtml(commentBody)
+                    font.pixelSize: 14; color: app.theme.text
+                    wrapMode: Text.Wrap
+                    Layout.fillWidth: true
+                    textFormat: Text.StyledText
+                    linkColor: app.theme.primary
+                }
+
+                // Actions row
+                RowLayout {
+                    spacing: 16
+
+                    Label {
+                        text: "▲"
+                        font.pixelSize: 14; color: app.theme.textSecondary
+                    }
+                    Label {
+                        text: "▼"
+                        font.pixelSize: 14; color: app.theme.textSecondary
+                    }
+
+                    Label {
+                        text: "↩ Reply"
+                        font.pixelSize: 12; color: app.theme.primary
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: replyClicked()
+                        }
+                    }
+
+                    Label {
+                        text: "[-] collapse"
+                        font.pixelSize: 12; color: app.theme.textSecondary
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: collapsed = true
+                        }
+                    }
+                }
+            }
         }
     }
 
