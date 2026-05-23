@@ -9,8 +9,10 @@ int SubredditModel::rowCount(const QModelIndex& parent) const {
 }
 
 QVariant SubredditModel::data(const QModelIndex& index, int role) const {
-    if (!index.isValid()) return {};
-    if (role == NameRole) return m_names[index.row()];
+    if (!index.isValid())
+        return {};
+    if (role == NameRole)
+        return m_names[index.row()];
     return {};
 }
 
@@ -24,4 +26,4 @@ void SubredditModel::setSubreddits(const QStringList& names) {
     endResetModel();
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader

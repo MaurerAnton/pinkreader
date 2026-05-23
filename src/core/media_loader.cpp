@@ -14,9 +14,8 @@ void MediaLoader::setPreferLowBandwidth(bool low) {
     }
 }
 
-MediaInfo MediaLoader::resolveMedia(const QString& urlStr, const QString& domain,
-                                     const QString& postHint, bool isGallery,
-                                     bool isVideo, bool isSelf) {
+MediaInfo MediaLoader::resolveMedia(const QString& urlStr, const QString& domain, const QString& postHint,
+                                    bool isGallery, bool isVideo, bool isSelf) {
     MediaInfo info;
     info.url = QUrl(urlStr);
 
@@ -73,44 +72,54 @@ MediaInfo MediaLoader::resolveMedia(const QString& urlStr, const QString& domain
 }
 
 QUrl MediaLoader::previewUrl(const QString& url, const QString& thumbnail) {
-    if (!thumbnail.isEmpty() &&
-        thumbnail != "self" && thumbnail != "default" &&
-        thumbnail != "nsfw" && thumbnail != "spoiler") {
+    if (!thumbnail.isEmpty() && thumbnail != "self" && thumbnail != "default" && thumbnail != "nsfw" &&
+        thumbnail != "spoiler") {
         return QUrl(thumbnail);
     }
     return QUrl(url);
 }
 
 bool MediaLoader::isVideo(const QString& url, const QString& domain) {
-    if (domain.contains("v.redd.it")) return true;
-    if (domain.contains("youtube.com") || domain.contains("youtu.be")) return true;
-    if (url.endsWith(".mp4", Qt::CaseInsensitive)) return true;
-    if (url.endsWith(".webm", Qt::CaseInsensitive)) return true;
-    if (url.endsWith(".gifv", Qt::CaseInsensitive)) return true;
+    if (domain.contains("v.redd.it"))
+        return true;
+    if (domain.contains("youtube.com") || domain.contains("youtu.be"))
+        return true;
+    if (url.endsWith(".mp4", Qt::CaseInsensitive))
+        return true;
+    if (url.endsWith(".webm", Qt::CaseInsensitive))
+        return true;
+    if (url.endsWith(".gifv", Qt::CaseInsensitive))
+        return true;
     return false;
 }
 
-bool MediaLoader::isImage(const QString& url, const QString& domain,
-                           const QString& postHint) {
-    if (postHint == "image") return true;
-    if (domain.contains("i.redd.it")) return true;
-    if (domain.contains("i.imgur.com")) return true;
-    if (domain.contains("preview.redd.it")) return true;
+bool MediaLoader::isImage(const QString& url, const QString& domain, const QString& postHint) {
+    if (postHint == "image")
+        return true;
+    if (domain.contains("i.redd.it"))
+        return true;
+    if (domain.contains("i.imgur.com"))
+        return true;
+    if (domain.contains("preview.redd.it"))
+        return true;
 
-    static const QStringList imageExts = {
-        ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".svg"
-    };
+    static const QStringList imageExts = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".svg"};
     for (const auto& ext : imageExts) {
-        if (url.endsWith(ext, Qt::CaseInsensitive)) return true;
+        if (url.endsWith(ext, Qt::CaseInsensitive))
+            return true;
     }
     return false;
 }
 
 bool MediaLoader::isGif(const QString& url, const QString& domain) {
-    if (url.endsWith(".gif", Qt::CaseInsensitive)) return true;
-    if (url.contains(".gifv")) return true;
-    if (domain == "gfycat.com" || domain == "www.gfycat.com") return true;
-    if (domain == "redgifs.com" || domain == "www.redgifs.com") return true;
+    if (url.endsWith(".gif", Qt::CaseInsensitive))
+        return true;
+    if (url.contains(".gifv"))
+        return true;
+    if (domain == "gfycat.com" || domain == "www.gfycat.com")
+        return true;
+    if (domain == "redgifs.com" || domain == "www.redgifs.com")
+        return true;
     return false;
 }
 
@@ -144,37 +153,38 @@ QString MediaLoader::imgurDirectUrl(const QString& url) {
     QString fixed = url;
     fixed.replace("imgur.com/", "i.imgur.com/");
     fixed.replace(".gifv", ".mp4");
-    if (!fixed.contains('.')) fixed += ".jpg";
+    if (!fixed.contains('.'))
+        fixed += ".jpg";
     return fixed;
 }
 
-QString MediaLoader::redditVideoFallback(const QString& videoUrl,
-                                          const QString& dashUrl,
-                                          const QString& hlsUrl) {
-    if (!videoUrl.isEmpty()) return videoUrl;
-    if (!dashUrl.isEmpty()) return QString::fromUtf8(QByteArray::fromBase64(dashUrl.toUtf8()));
-    if (!hlsUrl.isEmpty()) return QString::fromUtf8(QByteArray::fromBase64(hlsUrl.toUtf8()));
+QString MediaLoader::redditVideoFallback(const QString& videoUrl, const QString& dashUrl, const QString& hlsUrl) {
+    if (!videoUrl.isEmpty())
+        return videoUrl;
+    if (!dashUrl.isEmpty())
+        return QString::fromUtf8(QByteArray::fromBase64(dashUrl.toUtf8()));
+    if (!hlsUrl.isEmpty())
+        return QString::fromUtf8(QByteArray::fromBase64(hlsUrl.toUtf8()));
     return {};
 }
 
-QUrl MediaLoader::playableVideoUrl(const QString& postUrl, const QString& domain,
-                                    const QString& videoFallbackUrl, const QString& hlsUrl,
-                                    const QString& dashUrl) {
+QUrl MediaLoader::playableVideoUrl(const QString& postUrl, const QString& domain, const QString& videoFallbackUrl,
+                                   const QString& hlsUrl, const QString& dashUrl) {
     // v.redd.it: try fallback mp4 first
     if (domain.contains("v.redd.it")) {
-        QString fallback = QString::fromUtf8(
-            QByteArray::fromBase64(videoFallbackUrl.toUtf8()));
-        if (!fallback.isEmpty()) return QUrl(fallback);
+        QString fallback = QString::fromUtf8(QByteArray::fromBase64(videoFallbackUrl.toUtf8()));
+        if (!fallback.isEmpty())
+            return QUrl(fallback);
 
         // Try DASH -> might not play in Qt, but try
-        QString dash = QString::fromUtf8(
-            QByteArray::fromBase64(dashUrl.toUtf8()));
-        if (!dash.isEmpty()) return QUrl(dash);
+        QString dash = QString::fromUtf8(QByteArray::fromBase64(dashUrl.toUtf8()));
+        if (!dash.isEmpty())
+            return QUrl(dash);
 
         // Try HLS
-        QString hls = QString::fromUtf8(
-            QByteArray::fromBase64(hlsUrl.toUtf8()));
-        if (!hls.isEmpty()) return QUrl(hls);
+        QString hls = QString::fromUtf8(QByteArray::fromBase64(hlsUrl.toUtf8()));
+        if (!hls.isEmpty())
+            return QUrl(hls);
 
         return QUrl(postUrl + "/DASH_720.mp4");
     }
@@ -208,4 +218,4 @@ QUrl MediaLoader::playableVideoUrl(const QString& postUrl, const QString& domain
     return QUrl(postUrl);
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader

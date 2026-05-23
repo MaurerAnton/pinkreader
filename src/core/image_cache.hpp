@@ -1,13 +1,13 @@
 #pragma once
 
-#include <QObject>
-#include <QQuickImageProvider>
-#include <QImage>
-#include <QPixmap>
 #include <QHash>
+#include <QImage>
 #include <QMutex>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QObject>
+#include <QPixmap>
+#include <QQuickImageProvider>
 
 namespace PinkReader {
 
@@ -43,7 +43,7 @@ private:
     void evictOldest(qint64 targetSize);
 
     QString m_cacheDir;
-    qint64 m_maxCacheSize = 200 * 1024 * 1024; // 200 MB
+    qint64 m_maxCacheSize = 200 * 1024 * 1024;  // 200 MB
     QNetworkAccessManager* m_nam;
     QHash<QString, QNetworkReply*> m_activeDownloads;
     mutable QMutex m_mutex;
@@ -52,12 +52,11 @@ private:
 class PinkImageProvider : public QQuickImageProvider {
 public:
     explicit PinkImageProvider(ImageCache* cache);
-    QImage requestImage(const QString& id, QSize* size,
-                        const QSize& requestedSize) override;
-    QPixmap requestPixmap(const QString& id, QSize* size,
-                          const QSize& requestedSize) override;
+    QImage requestImage(const QString& id, QSize* size, const QSize& requestedSize) override;
+    QPixmap requestPixmap(const QString& id, QSize* size, const QSize& requestedSize) override;
+
 private:
     ImageCache* m_cache;
 };
 
-} // namespace PinkReader
+}  // namespace PinkReader

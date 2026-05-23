@@ -13,5 +13,5 @@ bool isNetworkAvailable();
 void setKeepScreenOn(bool on);
 QString deviceId();
 
-} // namespace Platform
-} // namespace PinkReader
+}  // namespace Platform
+}  // namespace PinkReader

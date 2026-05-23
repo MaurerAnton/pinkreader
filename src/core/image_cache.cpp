@@ -1,29 +1,24 @@
 #include "image_cache.hpp"
 
+#include <QCryptographicHash>
+#include <QDateTime>
+#include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QStandardPaths>
-#include <QCryptographicHash>
-#include <QDateTime>
 #include <QUrl>
-#include <QDebug>
 
 namespace PinkReader {
 
 ImageCache::ImageCache(const QString& cacheDir, QObject* parent)
-    : QObject(parent)
-    , m_cacheDir(cacheDir)
-    , m_nam(new QNetworkAccessManager(this))
-{
+    : QObject(parent), m_cacheDir(cacheDir), m_nam(new QNetworkAccessManager(this)) {
     QDir().mkpath(m_cacheDir);
     m_nam->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
 }
 
 QString ImageCache::hashUrl(const QString& url) const {
-    return QString::fromUtf8(
-        QCryptographicHash::hash(url.toUtf8(), QCryptographicHash::Sha256).toHex()
-    );
+    return QString::fromUtf8(QCryptographicHash::hash(url.toUtf8(), QCryptographicHash::Sha256).toHex());
 }
 
 QString ImageCache::localPath(const QString& url) const {
@@ -37,9 +32,12 @@ bool ImageCache::isCached(const QString& url) const {
 }
 
 QString ImageCache::cacheUrl(const QString& remoteUrl) {
-    if (remoteUrl.isEmpty()) return {};
-    if (remoteUrl.startsWith("image://")) return remoteUrl;
-    if (remoteUrl.startsWith("qrc:")) return remoteUrl;
+    if (remoteUrl.isEmpty())
+        return {};
+    if (remoteUrl.startsWith("image://"))
+        return remoteUrl;
+    if (remoteUrl.startsWith("qrc:"))
+        return remoteUrl;
 
     QString local = localPath(remoteUrl);
 
@@ -51,8 +49,10 @@ QString ImageCache::cacheUrl(const QString& remoteUrl) {
 }
 
 void ImageCache::prefetch(const QString& url) {
-    if (url.isEmpty() || isCached(url)) return;
-    if (m_activeDownloads.contains(url)) return;
+    if (url.isEmpty() || isCached(url))
+        return;
+    if (m_activeDownloads.contains(url))
+        return;
     downloadImage(url);
 }
 
@@ -73,7 +73,8 @@ qint64 ImageCache::currentSize() const {
 }
 
 void ImageCache::downloadImage(const QString& url) {
-    if (m_activeDownloads.contains(url)) return;
+    if (m_activeDownloads.contains(url))
+        return;
 
     QNetworkRequest req{QUrl{url}};
     req.setRawHeader("User-Agent", "PinkReader/0.1");
@@ -113,9 +114,7 @@ void ImageCache::downloadImage(const QString& url) {
     });
 
     connect(reply, &QNetworkReply::downloadProgress, this,
-        [this, url](qint64 received, qint64 total) {
-            emit downloadProgress(url, received, total);
-        });
+            [this, url](qint64 received, qint64 total) { emit downloadProgress(url, received, total); });
 }
 
 void ImageCache::evictOldest(qint64 targetSize) {
@@ -124,56 +123,56 @@ void ImageCache::evictOldest(qint64 targetSize) {
     qint64 total = currentSize();
 
     for (const auto& entry : entries) {
-        if (total <= targetSize) break;
+        if (total <= targetSize)
+            break;
         total -= entry.size();
         QFile::remove(entry.absoluteFilePath());
     }
 }
 
 QImage ImageCache::loadImage(const QString& url) {
-    if (!isCached(url)) return {};
+    if (!isCached(url))
+        return {};
     return QImage(localPath(url));
 }
 
 QPixmap ImageCache::loadPixmap(const QString& url) {
-    if (!isCached(url)) return {};
+    if (!isCached(url))
+        return {};
     return QPixmap(localPath(url));
 }
 
 // --- PinkImageProvider ---
 
 PinkImageProvider::PinkImageProvider(ImageCache* cache)
-    : QQuickImageProvider(QQmlImageProviderBase::Image)
-    , m_cache(cache)
-{
-}
+    : QQuickImageProvider(QQmlImageProviderBase::Image), m_cache(cache) {}
 
-QImage PinkImageProvider::requestImage(const QString& id, QSize* size,
-                                        const QSize& requestedSize) {
+QImage PinkImageProvider::requestImage(const QString& id, QSize* size, const QSize& requestedSize) {
     QImage img = m_cache->loadImage(id);
     if (img.isNull()) {
         m_cache->prefetch(id);
         return {};
     }
-    if (size) *size = img.size();
+    if (size)
+        *size = img.size();
     if (requestedSize.isValid()) {
         return img.scaled(requestedSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
     return img;
 }
 
-QPixmap PinkImageProvider::requestPixmap(const QString& id, QSize* size,
-                                          const QSize& requestedSize) {
+QPixmap PinkImageProvider::requestPixmap(const QString& id, QSize* size, const QSize& requestedSize) {
     QPixmap pix = m_cache->loadPixmap(id);
     if (pix.isNull()) {
         m_cache->prefetch(id);
         return {};
     }
-    if (size) *size = pix.size();
+    if (size)
+        *size = pix.size();
     if (requestedSize.isValid()) {
         return pix.scaled(requestedSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
     return pix;
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader

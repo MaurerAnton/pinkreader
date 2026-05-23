@@ -1,22 +1,22 @@
 #include "oauth_json_strategy.hpp"
+
 #include "../api_routes.hpp"
 #include "../json_parser.hpp"
 
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonArray>
 #include <QNetworkReply>
 #include <QUrlQuery>
 
-static QString oauthBase() { return QStringLiteral("https://oauth.reddit.com"); }
+static QString oauthBase() {
+    return QStringLiteral("https://oauth.reddit.com");
+}
 
 namespace PinkReader {
 
 OAuthJsonStrategy::OAuthJsonStrategy(QObject* parent)
-    : ApiStrategy(parent)
-    , m_nam(new QNetworkAccessManager(this))
-    , m_userAgent("PinkReader/0.1 (Android; C++/Qt6)")
-{
+    : ApiStrategy(parent), m_nam(new QNetworkAccessManager(this)), m_userAgent("PinkReader/0.1 (Android; C++/Qt6)") {
     m_nam->setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
 }
 
@@ -48,23 +48,23 @@ void OAuthJsonStrategy::fetchFeed(const FeedRequest& request, PostCallback callb
     if (request.subreddit.isEmpty()) {
         path = request.sort == SortOrder::Hot ? QStringLiteral("/hot") : QStringLiteral("/new");
     } else {
-        path = QStringLiteral("/r/") + request.subreddit + QStringLiteral("/")
-               + (request.sort == SortOrder::Hot ? QStringLiteral("hot") : QStringLiteral("new"));
+        path = QStringLiteral("/r/") + request.subreddit + QStringLiteral("/") +
+               (request.sort == SortOrder::Hot ? QStringLiteral("hot") : QStringLiteral("new"));
     }
-    
+
     QUrlQuery query;
     query.addQueryItem("limit", QString::number(request.limit));
     query.addQueryItem("raw_json", "1");
     if (!request.after.isEmpty())
         query.addQueryItem("after", request.after);
-    
+
     QUrl url(oauthBase() + path);
     url.setQuery(query);
-    
+
     QNetworkRequest req(url);
     req.setRawHeader("Authorization", ("Bearer " + m_accessToken).toUtf8());
     req.setRawHeader("User-Agent", m_userAgent.toUtf8());
-    
+
     auto* reply = m_nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [reply, callback]() {
         reply->deleteLater();
@@ -87,14 +87,14 @@ void OAuthJsonStrategy::fetchComments(const CommentRequest& request, CommentCall
     query.addQueryItem("raw_json", "1");
     if (!request.commentId.isEmpty())
         query.addQueryItem("comment", request.commentId);
-    
+
     QUrl url(oauthBase() + path);
     url.setQuery(query);
-    
+
     QNetworkRequest req(url);
     req.setRawHeader("Authorization", ("Bearer " + m_accessToken).toUtf8());
     req.setRawHeader("User-Agent", m_userAgent.toUtf8());
-    
+
     auto* reply = m_nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [reply, callback]() {
         reply->deleteLater();
@@ -140,11 +140,11 @@ void OAuthJsonStrategy::fetchMoreChildren(const QString& linkId, const QStringLi
     query.addQueryItem("children", children.join(","));
     query.addQueryItem("api_type", "json");
     url.setQuery(query);
-    
+
     QNetworkRequest req(url);
     req.setRawHeader("Authorization", ("Bearer " + m_accessToken).toUtf8());
     req.setRawHeader("User-Agent", m_userAgent.toUtf8());
-    
+
     auto* reply = m_nam->post(req, QByteArray());
     connect(reply, &QNetworkReply::finished, this, [reply, callback]() {
         reply->deleteLater();
@@ -162,12 +162,12 @@ void OAuthJsonStrategy::vote(const QString& fullname, int direction, ApiCallback
     query.addQueryItem("id", fullname);
     query.addQueryItem("dir", QString::number(direction));
     query.addQueryItem("rank", "2");
-    
+
     QNetworkRequest req(url);
     req.setRawHeader("Authorization", ("Bearer " + m_accessToken).toUtf8());
     req.setRawHeader("User-Agent", m_userAgent.toUtf8());
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-    
+
     auto* reply = m_nam->post(req, query.toString(QUrl::FullyEncoded).toUtf8());
     connect(reply, &QNetworkReply::finished, this, [reply, callback]() {
         reply->deleteLater();
@@ -180,12 +180,12 @@ void OAuthJsonStrategy::save(const QString& fullname, bool saveFlag, ApiCallback
     QUrl url(oauthBase() + endpoint);
     QUrlQuery query;
     query.addQueryItem("id", fullname);
-    
+
     QNetworkRequest req(url);
     req.setRawHeader("Authorization", ("Bearer " + m_accessToken).toUtf8());
     req.setRawHeader("User-Agent", m_userAgent.toUtf8());
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-    
+
     auto* reply = m_nam->post(req, query.toString(QUrl::FullyEncoded).toUtf8());
     connect(reply, &QNetworkReply::finished, this, [reply, callback]() {
         reply->deleteLater();
@@ -197,12 +197,12 @@ void OAuthJsonStrategy::hide(const QString& fullname, ApiCallback callback) {
     QUrl url(oauthBase() + "/api/hide");
     QUrlQuery query;
     query.addQueryItem("id", fullname);
-    
+
     QNetworkRequest req(url);
     req.setRawHeader("Authorization", ("Bearer " + m_accessToken).toUtf8());
     req.setRawHeader("User-Agent", m_userAgent.toUtf8());
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-    
+
     auto* reply = m_nam->post(req, query.toString(QUrl::FullyEncoded).toUtf8());
     connect(reply, &QNetworkReply::finished, this, [reply, callback]() {
         reply->deleteLater();
@@ -216,12 +216,12 @@ void OAuthJsonStrategy::submitComment(const QString& parentFullname, const QStri
     query.addQueryItem("thing_id", parentFullname);
     query.addQueryItem("text", text);
     query.addQueryItem("api_type", "json");
-    
+
     QNetworkRequest req(url);
     req.setRawHeader("Authorization", ("Bearer " + m_accessToken).toUtf8());
     req.setRawHeader("User-Agent", m_userAgent.toUtf8());
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-    
+
     auto* reply = m_nam->post(req, query.toString(QUrl::FullyEncoded).toUtf8());
     connect(reply, &QNetworkReply::finished, this, [reply, callback]() {
         reply->deleteLater();
@@ -230,24 +230,22 @@ void OAuthJsonStrategy::submitComment(const QString& parentFullname, const QStri
 }
 
 void OAuthJsonStrategy::search(const QString& query, const QString& subreddit, PostCallback callback) {
-    QString path = subreddit.isEmpty()
-        ? "/search"
-        : "/r/" + subreddit + "/search";
-    
+    QString path = subreddit.isEmpty() ? "/search" : "/r/" + subreddit + "/search";
+
     QUrlQuery q;
     q.addQueryItem("q", query);
     q.addQueryItem("type", "link");
     q.addQueryItem("sort", "relevance");
     q.addQueryItem("limit", "25");
     q.addQueryItem("raw_json", "1");
-    
+
     QUrl url(oauthBase() + path);
     url.setQuery(q);
-    
+
     QNetworkRequest req(url);
     req.setRawHeader("Authorization", ("Bearer " + m_accessToken).toUtf8());
     req.setRawHeader("User-Agent", m_userAgent.toUtf8());
-    
+
     auto* reply = m_nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [reply, callback]() {
         reply->deleteLater();
@@ -261,4 +259,4 @@ void OAuthJsonStrategy::search(const QString& query, const QString& subreddit, P
     });
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader

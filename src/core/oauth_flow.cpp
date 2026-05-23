@@ -1,15 +1,15 @@
 #include "oauth_flow.hpp"
 
+#include <QCoreApplication>
+#include <QCryptographicHash>
+#include <QDesktopServices>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
-#include <QUrlQuery>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QCryptographicHash>
 #include <QRandomGenerator>
-#include <QDesktopServices>
-#include <QCoreApplication>
+#include <QUrlQuery>
 
 namespace PinkReader {
 
@@ -51,9 +51,9 @@ void OAuthFlow::startAuth() {
     query.addQueryItem("redirect_uri", REDIRECT_URI);
     query.addQueryItem("duration", "permanent");
     query.addQueryItem("scope",
-        "identity edit flair history modconfig modflair modlog "
-        "modposts modwiki mysubreddits privatemessages read report "
-        "save submit subscribe vote wikiedit wikiread");
+                       "identity edit flair history modconfig modflair modlog "
+                       "modposts modwiki mysubreddits privatemessages read report "
+                       "save submit subscribe vote wikiedit wikiread");
     query.addQueryItem("code_challenge", QString::fromLatin1(challenge));
     query.addQueryItem("code_challenge_method", "S256");
 
@@ -63,7 +63,8 @@ void OAuthFlow::startAuth() {
 }
 
 void OAuthFlow::handleRedirect(const QUrl& redirectUrl) {
-    if (!m_authenticating) return;
+    if (!m_authenticating)
+        return;
 
     QUrlQuery query(redirectUrl);
     QString error = query.queryItemValue("error");
@@ -91,10 +92,8 @@ void OAuthFlow::exchangeCodeForToken(const QString& code) {
     QUrl url(TOKEN_URL);
     QNetworkRequest req(url);
     req.setRawHeader("User-Agent", USER_AGENT);
-    req.setRawHeader("Authorization",
-        "Basic " + QByteArray(QString(CLIENT_ID).toUtf8()).toBase64());
-    req.setHeader(QNetworkRequest::ContentTypeHeader,
-        "application/x-www-form-urlencoded");
+    req.setRawHeader("Authorization", "Basic " + QByteArray(QString(CLIENT_ID).toUtf8()).toBase64());
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
 
     QUrlQuery body;
     body.addQueryItem("grant_type", "authorization_code");
@@ -138,10 +137,8 @@ void OAuthFlow::refreshAccessToken(const QString& refreshTokenStr) {
     QUrl url(TOKEN_URL);
     QNetworkRequest req(url);
     req.setRawHeader("User-Agent", USER_AGENT);
-    req.setRawHeader("Authorization",
-        "Basic " + QByteArray(QString(CLIENT_ID).toUtf8()).toBase64());
-    req.setHeader(QNetworkRequest::ContentTypeHeader,
-        "application/x-www-form-urlencoded");
+    req.setRawHeader("Authorization", "Basic " + QByteArray(QString(CLIENT_ID).toUtf8()).toBase64());
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
 
     QUrlQuery body;
     body.addQueryItem("grant_type", "refresh_token");
@@ -168,4 +165,4 @@ void OAuthFlow::refreshAccessToken(const QString& refreshTokenStr) {
     });
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader

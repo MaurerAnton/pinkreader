@@ -1,14 +1,15 @@
 #pragma once
 
+#include "../core/models.hpp"
+#include "comment_tree_model.hpp"
+#include "post_list_model.hpp"
+#include "subreddit_list_model.hpp"
+
 #include <QObject>
-#include <QStringList>
 #include <QSet>
+#include <QStringList>
 #include <QVariantMap>
 #include <memory>
-#include "../core/models.hpp"
-#include "post_list_model.hpp"
-#include "comment_tree_model.hpp"
-#include "subreddit_list_model.hpp"
 
 namespace PinkReader {
 
@@ -52,11 +53,11 @@ class AppController : public QObject {
     Q_PROPERTY(QStringList readPostIds READ readPostIds NOTIFY contentSettingsChanged)
     Q_PROPERTY(QVariantMap subredditInfo READ subredditInfo NOTIFY subredditInfoChanged)
     Q_PROPERTY(QVariantList subredditRules READ subredditRules NOTIFY subredditRulesChanged)
-    
+
 public:
     explicit AppController(QObject* parent = nullptr);
     ~AppController();
-    
+
     PostListModel* postModel() const { return m_postModel; }
     CommentTreeModel* commentModel() const { return m_commentModel; }
     bool loading() const { return m_loading; }
@@ -65,7 +66,7 @@ public:
     QStringList subscribedSubreddits() const { return m_subscribed; }
     bool isLoggedIn() const { return m_loggedIn; }
     QString currentUser() const { return m_currentUser; }
-    
+
     Q_INVOKABLE void loadFrontpage(const QString& sort = "hot");
     Q_INVOKABLE void loadSubreddit(const QString& subreddit, const QString& sort = "hot");
     Q_INVOKABLE void loadComments(const QString& postId, const QString& subreddit);
@@ -91,8 +92,7 @@ public:
     Q_INVOKABLE bool isPostRead(const QString& postId) const;
     Q_INVOKABLE void copyToClipboard(const QString& text);
     Q_INVOKABLE void shareUrl(const QString& url, const QString& title = {});
-    Q_INVOKABLE void submitPost(const QString& kind, const QString& subreddit,
-                                const QString& title, const QString& url,
+    Q_INVOKABLE void submitPost(const QString& kind, const QString& subreddit, const QString& title, const QString& url,
                                 const QString& text, const QString& flair);
     Q_INVOKABLE void loadMultireddit(const QString& username, const QString& multiname);
     Q_INVOKABLE void report(const QString& thingId, const QString& reason = "Spam");
@@ -133,12 +133,12 @@ signals:
     void contentSettingsChanged();
     void subredditInfoChanged();
     void subredditRulesChanged();
-    
+
 private:
     void initialize();
     void loadSubscriptions();
     void saveSubscriptions();
-    
+
     RedditClient* m_client;
     CacheManager* m_cache;
     AccountManager* m_accounts;
@@ -153,7 +153,7 @@ private:
     SubredditListModel* m_subredditModel;
     PostListModel* m_postModel;
     CommentTreeModel* m_commentModel;
-    
+
     bool m_loading = false;
     QString m_currentSubreddit;
     QString m_currentSort = "hot";
@@ -174,4 +174,4 @@ private:
     QVariantList m_subredditRules;
 };
 
-} // namespace PinkReader
+}  // namespace PinkReader

@@ -1,8 +1,8 @@
 #pragma once
 
+#include <QNetworkAccessManager>
 #include <QObject>
 #include <QTimer>
-#include <QNetworkAccessManager>
 
 namespace PinkReader {
 
@@ -31,4 +31,4 @@ private:
     QNetworkAccessManager* m_nam;
 };
 
-} // namespace PinkReader
+}  // namespace PinkReader

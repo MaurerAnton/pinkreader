@@ -1,17 +1,14 @@
 #include "rss_strategy.hpp"
+
 #include "../api_routes.hpp"
 
 #include <QNetworkReply>
-#include <QXmlStreamReader>
 #include <QRegularExpression>
+#include <QXmlStreamReader>
 
 namespace PinkReader {
 
-RssStrategy::RssStrategy(QObject* parent)
-    : ApiStrategy(parent)
-    , m_nam(new QNetworkAccessManager(this))
-{
-}
+RssStrategy::RssStrategy(QObject* parent) : ApiStrategy(parent), m_nam(new QNetworkAccessManager(this)) {}
 
 void RssStrategy::fetchFeed(const FeedRequest& request, PostCallback callback) {
     QUrl url;
@@ -20,10 +17,10 @@ void RssStrategy::fetchFeed(const FeedRequest& request, PostCallback callback) {
     } else {
         url = QUrl(ApiRoutes::rssSubreddit(request.subreddit));
     }
-    
+
     QNetworkRequest req(url);
     req.setRawHeader("User-Agent", "PinkReader/0.1");
-    
+
     auto* reply = m_nam->get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply, callback]() {
         reply->deleteLater();
@@ -39,14 +36,14 @@ void RssStrategy::fetchFeed(const FeedRequest& request, PostCallback callback) {
 QVector<Post> RssStrategy::parseRssFeed(const QByteArray& data) {
     QVector<Post> posts;
     QXmlStreamReader xml(data);
-    
+
     Post current;
     bool inItem = false;
     QString currentElement;
-    
+
     while (!xml.atEnd() && !xml.hasError()) {
         auto token = xml.readNext();
-        
+
         if (token == QXmlStreamReader::StartElement) {
             currentElement = xml.name().toString();
             if (currentElement == QLatin1String("entry") || currentElement == QLatin1String("item")) {
@@ -62,7 +59,7 @@ QVector<Post> RssStrategy::parseRssFeed(const QByteArray& data) {
             }
         } else if (token == QXmlStreamReader::Characters && inItem) {
             QString text = xml.text().toString();
-            
+
             if (currentElement == "id" || currentElement == "guid") {
                 current.id = text;
                 current.fullname = "t3_" + text;
@@ -82,8 +79,8 @@ QVector<Post> RssStrategy::parseRssFeed(const QByteArray& data) {
             }
         }
     }
-    
+
     return posts;
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader

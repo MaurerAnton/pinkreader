@@ -1,9 +1,10 @@
 #pragma once
 
+#include "../core/models.hpp"
+
 #include <QAbstractListModel>
 #include <QSortFilterProxyModel>
 #include <QVector>
-#include "../core/models.hpp"
 
 namespace PinkReader {
 
@@ -25,13 +26,7 @@ public:
         CreatedRole
     };
 
-    enum SortMode {
-        SortRelevance,
-        SortSubscribers,
-        SortActiveUsers,
-        SortPostsPerDay,
-        SortName
-    };
+    enum SortMode { SortRelevance, SortSubscribers, SortActiveUsers, SortPostsPerDay, SortName };
     Q_ENUM(SortMode)
 
     explicit SubredditListModel(QObject* parent = nullptr);
@@ -63,4 +58,4 @@ private:
     QString m_sortBy = "relevance";
 };
 
-} // namespace PinkReader
+}  // namespace PinkReader

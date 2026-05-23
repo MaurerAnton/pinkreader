@@ -1,4 +1,5 @@
 #include "models.hpp"
+
 #include "json_parser.hpp"
 
 namespace PinkReader {
@@ -72,4 +73,4 @@ Listing Listing::fromJson(const QJsonObject& obj) {
     return Listing{};
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader

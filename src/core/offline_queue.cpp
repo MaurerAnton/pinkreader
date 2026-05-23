@@ -1,11 +1,11 @@
 #include "offline_queue.hpp"
 
-#include <QStandardPaths>
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
-#include <QJsonDocument>
 #include <QJsonArray>
-#include <QDateTime>
+#include <QJsonDocument>
+#include <QStandardPaths>
 
 namespace PinkReader {
 
@@ -66,7 +66,8 @@ void OfflineQueue::enqueueHide(const QString& fullname) {
 }
 
 void OfflineQueue::flush() {
-    if (m_queue.isEmpty() || m_flushing || !m_handler) return;
+    if (m_queue.isEmpty() || m_flushing || !m_handler)
+        return;
     m_flushing = true;
     processNext();
 }
@@ -85,8 +86,7 @@ void OfflineQueue::processNext() {
         if (success) {
             emit actionFlushed(m_queue.isEmpty() ? PendingAction{} : m_queue.first());
         } else {
-            emit flushError(m_queue.isEmpty() ? PendingAction{} : m_queue.first(),
-                            "Action failed");
+            emit flushError(m_queue.isEmpty() ? PendingAction{} : m_queue.first(), "Action failed");
         }
 
         if (m_queue.isEmpty()) {
@@ -105,8 +105,7 @@ void OfflineQueue::clear() {
 }
 
 void OfflineQueue::saveQueue() {
-    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
-                   + "/offline_queue.json";
+    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/offline_queue.json";
     QDir().mkpath(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
 
     QJsonArray arr;
@@ -122,10 +121,10 @@ void OfflineQueue::saveQueue() {
 }
 
 void OfflineQueue::loadQueue() {
-    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
-                   + "/offline_queue.json";
+    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/offline_queue.json";
     QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) return;
+    if (!file.open(QIODevice::ReadOnly))
+        return;
 
     QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
     file.close();
@@ -135,4 +134,4 @@ void OfflineQueue::loadQueue() {
     }
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader

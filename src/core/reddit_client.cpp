@@ -1,29 +1,29 @@
 #include "reddit_client.hpp"
-#include "api_strategy.hpp"
-#include "strategies/oauth_json_strategy.hpp"
-#include "strategies/anonymous_json_strategy.hpp"
-#include "strategies/rss_strategy.hpp"
-#include "strategies/alt_frontend_strategy.hpp"
-#include "strategies/scrape_strategy.hpp"
-#include "cache_manager.hpp"
-#include "account_manager.hpp"
 
+#include "account_manager.hpp"
+#include "api_strategy.hpp"
+#include "cache_manager.hpp"
+#include "strategies/alt_frontend_strategy.hpp"
+#include "strategies/anonymous_json_strategy.hpp"
+#include "strategies/oauth_json_strategy.hpp"
+#include "strategies/rss_strategy.hpp"
+#include "strategies/scrape_strategy.hpp"
+
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QUrlQuery>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
 
 namespace PinkReader {
 
 RedditClient::RedditClient(QObject* parent)
-    : QObject(parent)
-    , m_strategyChain(new StrategyChain(this))
-    , m_cache(nullptr)
-    , m_contentResolver(nullptr)
-    , m_accountManager(nullptr)
-{
+    : QObject(parent),
+      m_strategyChain(new StrategyChain(this)),
+      m_cache(nullptr),
+      m_contentResolver(nullptr),
+      m_accountManager(nullptr) {
     // Build strategy chain: try authenticated first, then fall through
     auto* oauth = new OAuthJsonStrategy(this);
     m_oauthStrategy = oauth;
@@ -31,20 +31,19 @@ RedditClient::RedditClient(QObject* parent)
     auto* rss = new RssStrategy(this);
     auto* alt = new AltFrontendStrategy(this);
     auto* scrape = new ScrapeStrategy(this);
-    
+
     m_strategyChain->addStrategy(oauth);
     m_strategyChain->addStrategy(anon);
     m_strategyChain->addStrategy(rss);
     m_strategyChain->addStrategy(alt);
     m_strategyChain->addStrategy(scrape);
-    
+
     // Connect signals
-    for (auto* s : {static_cast<ApiStrategy*>(oauth), static_cast<ApiStrategy*>(anon), 
-                     static_cast<ApiStrategy*>(rss), static_cast<ApiStrategy*>(alt)}) {
+    for (auto* s : {static_cast<ApiStrategy*>(oauth), static_cast<ApiStrategy*>(anon), static_cast<ApiStrategy*>(rss),
+                    static_cast<ApiStrategy*>(alt)}) {
         connect(s, &ApiStrategy::networkError, this, &RedditClient::errorOccurred);
-        connect(s, &ApiStrategy::rateLimited, this, [this](int seconds) {
-            setError(QString("Rate limited. Retry in %1 seconds.").arg(seconds));
-        });
+        connect(s, &ApiStrategy::rateLimited, this,
+                [this](int seconds) { setError(QString("Rate limited. Retry in %1 seconds.").arg(seconds)); });
     }
 }
 
@@ -65,19 +64,25 @@ void RedditClient::setError(const QString& error) {
 void RedditClient::fetchFrontpage(const QString& sort, const QString& after) {
     setLoading(true);
     setError({});
-    
+
     FeedRequest req;
     req.subreddit.clear();
-    if (sort == "new") req.sort = SortOrder::New;
-    else if (sort == "top") req.sort = SortOrder::Top;
-    else if (sort == "rising") req.sort = SortOrder::Rising;
-    else if (sort == "controversial") req.sort = SortOrder::Controversial;
-    else if (sort == "best") req.sort = SortOrder::Best;
-    else req.sort = SortOrder::Hot;
+    if (sort == "new")
+        req.sort = SortOrder::New;
+    else if (sort == "top")
+        req.sort = SortOrder::Top;
+    else if (sort == "rising")
+        req.sort = SortOrder::Rising;
+    else if (sort == "controversial")
+        req.sort = SortOrder::Controversial;
+    else if (sort == "best")
+        req.sort = SortOrder::Best;
+    else
+        req.sort = SortOrder::Hot;
     req.after = after;
-    
+
     m_currentRequest = req;
-    
+
     // Check cache first
     if (m_cache && m_cache->cacheMode() == CacheManager::CacheMode::CacheFirst) {
         QString cacheKey = "_frontpage_" + sort;
@@ -88,7 +93,7 @@ void RedditClient::fetchFrontpage(const QString& sort, const QString& after) {
             return;
         }
     }
-    
+
     m_strategyChain->fetchFeed(req, [this](bool ok, auto posts, auto afterStr, auto err) {
         setLoading(false);
         if (ok) {
@@ -107,18 +112,23 @@ void RedditClient::fetchFrontpage(const QString& sort, const QString& after) {
 void RedditClient::fetchSubreddit(const QString& subreddit, const QString& sort, const QString& after) {
     setLoading(true);
     setError({});
-    
+
     FeedRequest req;
     req.subreddit = subreddit;
-    if (sort == "new") req.sort = SortOrder::New;
-    else if (sort == "top") req.sort = SortOrder::Top;
-    else if (sort == "rising") req.sort = SortOrder::Rising;
-    else if (sort == "controversial") req.sort = SortOrder::Controversial;
-    else req.sort = SortOrder::Hot;
+    if (sort == "new")
+        req.sort = SortOrder::New;
+    else if (sort == "top")
+        req.sort = SortOrder::Top;
+    else if (sort == "rising")
+        req.sort = SortOrder::Rising;
+    else if (sort == "controversial")
+        req.sort = SortOrder::Controversial;
+    else
+        req.sort = SortOrder::Hot;
     req.after = after;
-    
+
     m_currentRequest = req;
-    
+
     m_strategyChain->fetchFeed(req, [this, subreddit](bool ok, auto posts, auto afterStr, auto err) {
         setLoading(false);
         if (ok) {
@@ -135,11 +145,11 @@ void RedditClient::fetchSubreddit(const QString& subreddit, const QString& sort,
 
 void RedditClient::fetchComments(const QString& postId, const QString& subreddit, const QString& sort) {
     setLoading(true);
-    
+
     CommentRequest req;
     req.postId = postId;
     req.sort = sort;
-    
+
     m_strategyChain->fetchComments(req, [this, postId](bool ok, auto comments, auto err) {
         setLoading(false);
         if (ok) {
@@ -192,7 +202,8 @@ void RedditClient::unsavePost(const QString& fullname) {
 void RedditClient::hidePost(const QString& fullname) {
     if (m_oauthStrategy && m_oauthStrategy->isAvailable()) {
         m_oauthStrategy->hide(fullname, [this](bool ok, auto err) {
-            if (!ok) emit errorOccurred(err);
+            if (!ok)
+                emit errorOccurred(err);
         });
         return;
     }
@@ -200,7 +211,7 @@ void RedditClient::hidePost(const QString& fullname) {
 }
 
 void RedditClient::submitComment(const QString& parentFullname, const QString& text) {
-    m_strategyChain->vote(parentFullname, 0, [=](bool, auto) {}); // dummy
+    m_strategyChain->vote(parentFullname, 0, [=](bool, auto) {});  // dummy
     emit errorOccurred("Comment submission not yet implemented");
 }
 
@@ -273,14 +284,9 @@ void RedditClient::fetchUserAbout(const QString& username) {
         }
         QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
         QJsonObject data = doc.object()["data"].toObject();
-        emit userAboutReady(
-            username,
-            data["link_karma"].toInt(),
-            data["comment_karma"].toInt(),
-            QDateTime::fromSecsSinceEpoch(
-                static_cast<qint64>(data["created_utc"].toDouble()), Qt::UTC
-            ).toString("yyyy-MM-dd")
-        );
+        emit userAboutReady(username, data["link_karma"].toInt(), data["comment_karma"].toInt(),
+                            QDateTime::fromSecsSinceEpoch(static_cast<qint64>(data["created_utc"].toDouble()), Qt::UTC)
+                                .toString("yyyy-MM-dd"));
     });
 }
 
@@ -331,16 +337,16 @@ void RedditClient::fetchSubredditInfo(const QString& subreddit) {
         reply->deleteLater();
         nam->deleteLater();
 
-        if (reply->error() != QNetworkReply::NoError) return;
+        if (reply->error() != QNetworkReply::NoError)
+            return;
         QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
         Subreddit sr = Subreddit::fromJson(doc.object()["data"].toObject());
         emit subredditInfoReady(sr);
     });
 }
 
-void RedditClient::submitPost(const QString& kind, const QString& subreddit,
-                               const QString& title, const QString& url,
-                               const QString& text, const QString& flair) {
+void RedditClient::submitPost(const QString& kind, const QString& subreddit, const QString& title, const QString& url,
+                              const QString& text, const QString& flair) {
     if (!m_oauthStrategy || !m_oauthStrategy->isAvailable()) {
         emit submitComplete(false, "Login required to post");
         return;
@@ -416,7 +422,8 @@ void RedditClient::fetchSubredditRules(const QString& subreddit) {
         reply->deleteLater();
         nam->deleteLater();
 
-        if (reply->error() != QNetworkReply::NoError) return;
+        if (reply->error() != QNetworkReply::NoError)
+            return;
         QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
         QJsonArray rules = doc.object()["rules"].toArray();
 
@@ -463,10 +470,9 @@ void RedditClient::report(const QString& thingId, const QString& reason) {
 
 void RedditClient::refresh() {
     m_currentRequest.after.clear();
-    fetchFrontpage(
-        m_currentRequest.sort == SortOrder::Hot ? "hot" :
-        m_currentRequest.sort == SortOrder::New ? "new" : "hot"
-    );
+    fetchFrontpage(m_currentRequest.sort == SortOrder::Hot   ? "hot"
+                   : m_currentRequest.sort == SortOrder::New ? "new"
+                                                             : "hot");
 }
 
 void RedditClient::loadMore() {
@@ -483,4 +489,4 @@ void RedditClient::updateAuthToken(const QString& token) {
     }
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader

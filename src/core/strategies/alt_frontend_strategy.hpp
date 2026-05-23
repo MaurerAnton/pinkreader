@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../api_strategy.hpp"
+
 #include <QNetworkAccessManager>
 
 namespace PinkReader {
@@ -9,12 +10,12 @@ class AltFrontendStrategy : public ApiStrategy {
     Q_OBJECT
 public:
     explicit AltFrontendStrategy(QObject* parent = nullptr);
-    
+
     QString name() const override { return "Alternative Frontends (Teddi/Libreddit)"; }
     int priority() const override { return 40; }
     bool requiresAuth() const override { return false; }
     bool isAvailable() const override;
-    
+
     void fetchFeed(const FeedRequest& request, PostCallback callback) override;
     void fetchComments(const CommentRequest& request, CommentCallback callback) override;
     void fetchSubreddit(const QString& subreddit, SubredditCallback callback) override;
@@ -34,16 +35,16 @@ public:
         callback(false, "Commenting not available via alt frontends");
     }
     void search(const QString& query, const QString& subreddit, PostCallback callback) override;
-    
+
 private:
     QString pickInstance();
     QVector<Post> parseAltResponse(const QJsonDocument& doc);
     void probeInstance(const QString& url, std::function<void(bool)> callback);
-    
+
     QNetworkAccessManager* m_nam;
     QString m_currentInstance;
     QStringList m_availableInstances;
     bool m_probed = false;
 };
 
-} // namespace PinkReader
+}  // namespace PinkReader

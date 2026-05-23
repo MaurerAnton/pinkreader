@@ -1,7 +1,7 @@
 #pragma once
 
-#include <QObject>
 #include <QColor>
+#include <QObject>
 #include <QSettings>
 
 namespace PinkReader {
@@ -60,4 +60,4 @@ private:
     qreal m_fontScale = 1.0;
 };
 
-} // namespace PinkReader
+}  // namespace PinkReader

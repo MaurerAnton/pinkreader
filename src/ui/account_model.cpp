@@ -9,9 +9,12 @@ int AccountModel::rowCount(const QModelIndex& parent) const {
 }
 
 QVariant AccountModel::data(const QModelIndex& index, int role) const {
-    if (!index.isValid()) return {};
-    if (role == UsernameRole) return m_accounts[index.row()].username;
-    if (role == IsActiveRole) return index.row() == m_activeIndex;
+    if (!index.isValid())
+        return {};
+    if (role == UsernameRole)
+        return m_accounts[index.row()].username;
+    if (role == IsActiveRole)
+        return index.row() == m_activeIndex;
     return {};
 }
 
@@ -26,4 +29,4 @@ void AccountModel::setAccounts(const QVector<Account>& accounts, int activeIndex
     endResetModel();
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader

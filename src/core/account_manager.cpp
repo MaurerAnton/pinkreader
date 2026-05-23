@@ -1,32 +1,20 @@
 #include "account_manager.hpp"
 
-#include <QStandardPaths>
 #include <QDir>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonArray>
+#include <QStandardPaths>
 
 namespace PinkReader {
 
-AccountManager::AccountManager(QObject* parent)
-    : QObject(parent)
-{
+AccountManager::AccountManager(QObject* parent) : QObject(parent) {
     loadAccounts();
 }
 
 QStringList AccountManager::scopes() {
-    return {
-        "identity",
-        "read",
-        "vote",
-        "save",
-        "submit",
-        "subscribe",
-        "history",
-        "mysubreddits",
-        "privatemessages",
-        "account"
-    };
+    return {"identity",        "read",   "vote", "save", "submit", "subscribe", "history", "mysubreddits",
+            "privatemessages", "account"};
 }
 
 void AccountManager::addAccount(const Account& account) {
@@ -39,7 +27,7 @@ void AccountManager::addAccount(const Account& account) {
             return;
         }
     }
-    
+
     m_accounts.append(account);
     if (m_activeIndex < 0) {
         m_activeIndex = 0;
@@ -83,7 +71,8 @@ Account* AccountManager::activeAccount() {
 
 Account* AccountManager::account(const QString& username) {
     for (auto& acc : m_accounts) {
-        if (acc.username == username) return &acc;
+        if (acc.username == username)
+            return &acc;
     }
     return nullptr;
 }
@@ -99,7 +88,7 @@ QStringList AccountManager::accountNames() const {
 void AccountManager::saveAccounts() {
     QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     QDir().mkpath(path);
-    
+
     QJsonArray arr;
     for (const auto& acc : m_accounts) {
         QJsonObject obj;
@@ -111,7 +100,7 @@ void AccountManager::saveAccounts() {
         obj["scope"] = acc.scope;
         arr.append(obj);
     }
-    
+
     QJsonDocument doc(arr);
     QFile file(path + "/accounts.json");
     if (file.open(QIODevice::WriteOnly)) {
@@ -123,11 +112,12 @@ void AccountManager::saveAccounts() {
 void AccountManager::loadAccounts() {
     QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/accounts.json";
     QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) return;
-    
+    if (!file.open(QIODevice::ReadOnly))
+        return;
+
     QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
     file.close();
-    
+
     m_accounts.clear();
     for (const auto& val : doc.array()) {
         QJsonObject obj = val.toObject();
@@ -143,4 +133,4 @@ void AccountManager::loadAccounts() {
     }
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader

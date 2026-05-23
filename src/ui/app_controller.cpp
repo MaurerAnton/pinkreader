@@ -1,40 +1,40 @@
 #include "app_controller.hpp"
-#include "post_list_model.hpp"
-#include "comment_tree_model.hpp"
-#include "../core/reddit_client.hpp"
-#include "../core/cache_manager.hpp"
+
 #include "../core/account_manager.hpp"
+#include "../core/cache_manager.hpp"
 #include "../core/content_resolver.hpp"
 #include "../core/image_cache.hpp"
+#include "../core/markdown_parser.hpp"
 #include "../core/media_loader.hpp"
 #include "../core/oauth_flow.hpp"
 #include "../core/offline_detector.hpp"
 #include "../core/offline_queue.hpp"
+#include "../core/reddit_client.hpp"
 #include "../core/theme_manager.hpp"
-#include "../core/markdown_parser.hpp"
+#include "comment_tree_model.hpp"
+#include "post_list_model.hpp"
 
-#include <QStandardPaths>
-#include <QDir>
-#include <QSettings>
-#include <QFile>
 #include <QClipboard>
+#include <QDir>
+#include <QFile>
 #include <QGuiApplication>
-#include <QJsonDocument>
 #include <QJsonArray>
+#include <QJsonDocument>
+#include <QSettings>
+#include <QStandardPaths>
 
 namespace PinkReader {
 
 AppController::AppController(QObject* parent)
-    : QObject(parent)
-    , m_postModel(new PostListModel(this))
-    , m_commentModel(new CommentTreeModel(this))
-    , m_oauth(nullptr)
-    , m_offlineDetector(nullptr)
-    , m_offlineQueue(nullptr)
-    , m_theme(nullptr)
-    , m_markdown(nullptr)
-    , m_subredditModel(nullptr)
-{
+    : QObject(parent),
+      m_postModel(new PostListModel(this)),
+      m_commentModel(new CommentTreeModel(this)),
+      m_oauth(nullptr),
+      m_offlineDetector(nullptr),
+      m_offlineQueue(nullptr),
+      m_theme(nullptr),
+      m_markdown(nullptr),
+      m_subredditModel(nullptr) {
     initialize();
 }
 
@@ -42,16 +42,15 @@ AppController::~AppController() = default;
 
 void AppController::initialize() {
     // Setup cache
-    QString cachePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
-                        + "/cache.db";
+    QString cachePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/cache.db";
     QDir().mkpath(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
-    
+
     m_cache = new CacheManager(cachePath, this);
     m_cache->initialize();
-    
+
     // Setup account manager
     m_accounts = new AccountManager(this);
-    
+
     // Setup content resolver
     m_contentResolver = new ContentResolver(this);
 
@@ -72,8 +71,7 @@ void AppController::initialize() {
     }
 
     // Setup image cache
-    QString imageCachePath = QStandardPaths::writableLocation(QStandardPaths::CacheLocation)
-                             + "/images";
+    QString imageCachePath = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + "/images";
     m_imageCache = new ImageCache(imageCachePath, this);
 
     // Setup media loader
@@ -85,26 +83,24 @@ void AppController::initialize() {
         m_authUrl = m_oauth->authUrl();
         emit authUrlReady();
     });
-    connect(m_oauth, &OAuthFlow::authSuccess, this, [this](const QString& accessToken,
-                                                          const QString& refreshToken,
-                                                          int expiresIn) {
-        m_client->updateAuthToken(accessToken);
-        Account acc;
-        acc.username = "user"; // Will be updated after fetching identity
-        acc.accessToken = accessToken;
-        acc.refreshToken = refreshToken;
-        acc.expiresIn = expiresIn;
-        acc.isAnonymous = false;
-        m_accounts->addAccount(acc);
-        m_loggedIn = true;
-        // Fetch username
-        // For now, set a placeholder
-        m_currentUser = "logged_in";
-        emit loginStateChanged();
-    });
-    connect(m_oauth, &OAuthFlow::authError, this, [this](const QString& err) {
-        emit errorOccurred("Login failed: " + err);
-    });
+    connect(m_oauth, &OAuthFlow::authSuccess, this,
+            [this](const QString& accessToken, const QString& refreshToken, int expiresIn) {
+                m_client->updateAuthToken(accessToken);
+                Account acc;
+                acc.username = "user";  // Will be updated after fetching identity
+                acc.accessToken = accessToken;
+                acc.refreshToken = refreshToken;
+                acc.expiresIn = expiresIn;
+                acc.isAnonymous = false;
+                m_accounts->addAccount(acc);
+                m_loggedIn = true;
+                // Fetch username
+                // For now, set a placeholder
+                m_currentUser = "logged_in";
+                emit loginStateChanged();
+            });
+    connect(m_oauth, &OAuthFlow::authError, this,
+            [this](const QString& err) { emit errorOccurred("Login failed: " + err); });
 
     // Setup offline detector
     m_offlineDetector = new OfflineDetector(this);
@@ -113,7 +109,8 @@ void AppController::initialize() {
         emit offlineChanged();
         if (online) {
             // Flush pending actions when back online
-            if (m_offlineQueue) m_offlineQueue->flush();
+            if (m_offlineQueue)
+                m_offlineQueue->flush();
             // Refresh feed
             refresh();
         }
@@ -123,18 +120,17 @@ void AppController::initialize() {
     m_offlineQueue = new OfflineQueue(this);
     m_offlineQueue->setActionHandler([this](const PendingAction& action, auto done) {
         switch (action.type) {
-        case PendingAction::Vote:
-            m_client->vote(action.fullname, action.direction);
-            break;
-        case PendingAction::Save:
-            action.direction ? m_client->savePost(action.fullname)
-                             : m_client->unsavePost(action.fullname);
-            break;
-        case PendingAction::Hide:
-            m_client->hidePost(action.fullname);
-            break;
-        default:
-            break;
+            case PendingAction::Vote:
+                m_client->vote(action.fullname, action.direction);
+                break;
+            case PendingAction::Save:
+                action.direction ? m_client->savePost(action.fullname) : m_client->unsavePost(action.fullname);
+                break;
+            case PendingAction::Hide:
+                m_client->hidePost(action.fullname);
+                break;
+            default:
+                break;
         }
         done(true);
     });
@@ -148,26 +144,26 @@ void AppController::initialize() {
     m_client->setCacheManager(m_cache);
     m_client->setAccountManager(m_accounts);
     m_client->setContentResolver(m_contentResolver);
-    
+
     // Connect signals
     connect(m_client, &RedditClient::postsReady, this, [this](const QVector<Post>& posts, const QString& after) {
         m_postModel->setPosts(posts, after);
         m_loading = false;
         emit loadingChanged();
     });
-    
+
     connect(m_client, &RedditClient::commentsReady, this, [this](const QVector<Comment>& comments) {
         m_commentModel->setComments(comments);
         m_loading = false;
         emit loadingChanged();
     });
-    
+
     connect(m_client, &RedditClient::errorOccurred, this, [this](const QString& err) {
         m_loading = false;
         emit loadingChanged();
         emit errorOccurred(err);
     });
-    
+
     connect(m_client, &RedditClient::loadingChanged, this, [this]() {
         m_loading = m_client->loading();
         emit loadingChanged();
@@ -180,49 +176,45 @@ void AppController::initialize() {
     });
 
     connect(m_client, &RedditClient::userAboutReady, this,
-        [this](const QString& username, int linkKarma, int commentKarma, const QString& created) {
-            m_profileUser = username;
-            m_profileLinkKarma = linkKarma;
-            m_profileCommentKarma = commentKarma;
-            m_profileCreated = created;
-            emit profileUserChanged();
-        });
+            [this](const QString& username, int linkKarma, int commentKarma, const QString& created) {
+                m_profileUser = username;
+                m_profileLinkKarma = linkKarma;
+                m_profileCommentKarma = commentKarma;
+                m_profileCreated = created;
+                emit profileUserChanged();
+            });
 
-    connect(m_client, &RedditClient::userPostsReady, this,
-        [this](const QVector<Post>& posts, const QString& after) {
-            m_postModel->setPosts(posts, after);
-            m_loading = false;
-            emit loadingChanged();
-        });
+    connect(m_client, &RedditClient::userPostsReady, this, [this](const QVector<Post>& posts, const QString& after) {
+        m_postModel->setPosts(posts, after);
+        m_loading = false;
+        emit loadingChanged();
+    });
 
-    connect(m_client, &RedditClient::subredditInfoReady, this,
-        [this](const Subreddit& sr) {
-            QVariantMap map;
-            map["name"] = sr.name;
-            map["title"] = sr.title;
-            map["description"] = sr.publicDescription.isEmpty() ? sr.description : sr.publicDescription;
-            map["subscribers"] = sr.subscriberCount;
-            map["activeUsers"] = sr.activeUserCount;
-            map["over18"] = sr.over18;
-            map["created"] = sr.createdUtc.toString("yyyy-MM-dd");
-            map["iconUrl"] = sr.iconUrl.toString();
-            m_subredditInfo = map;
-            emit subredditInfoChanged();
-        });
+    connect(m_client, &RedditClient::subredditInfoReady, this, [this](const Subreddit& sr) {
+        QVariantMap map;
+        map["name"] = sr.name;
+        map["title"] = sr.title;
+        map["description"] = sr.publicDescription.isEmpty() ? sr.description : sr.publicDescription;
+        map["subscribers"] = sr.subscriberCount;
+        map["activeUsers"] = sr.activeUserCount;
+        map["over18"] = sr.over18;
+        map["created"] = sr.createdUtc.toString("yyyy-MM-dd");
+        map["iconUrl"] = sr.iconUrl.toString();
+        m_subredditInfo = map;
+        emit subredditInfoChanged();
+    });
 
-    connect(m_client, &RedditClient::subredditRulesReady, this,
-        [this](const QVariantList& rules) {
-            m_subredditRules = rules;
-            emit subredditRulesChanged();
-        });
+    connect(m_client, &RedditClient::subredditRulesReady, this, [this](const QVariantList& rules) {
+        m_subredditRules = rules;
+        emit subredditRulesChanged();
+    });
 
-    connect(m_client, &RedditClient::submitComplete, this,
-        [this](bool success, const QString& error) {
-            if (success)
-                emit errorOccurred("Post submitted successfully!");
-            else
-                emit errorOccurred("Submit failed: " + error);
-        });
+    connect(m_client, &RedditClient::submitComplete, this, [this](bool success, const QString& error) {
+        if (success)
+            emit errorOccurred("Post submitted successfully!");
+        else
+            emit errorOccurred("Submit failed: " + error);
+    });
 
     connect(m_accounts, &AccountManager::accountsChanged, this, [this]() {
         auto* acc = m_accounts->activeAccount();
@@ -230,7 +222,7 @@ void AppController::initialize() {
         m_currentUser = m_loggedIn ? acc->username : QString{};
         emit loginStateChanged();
     });
-    
+
     loadSubscriptions();
 }
 
@@ -282,7 +274,8 @@ void AppController::loadComments(const QString& postId, const QString& subreddit
 }
 
 void AppController::loadMore() {
-    if (m_loading) return;
+    if (m_loading)
+        return;
     m_loading = true;
     emit loadingChanged();
     m_client->loadMore();
@@ -315,7 +308,8 @@ void AppController::submitComment(const QString& parentFullname, const QString& 
         emit errorOccurred("Log in to comment");
         return;
     }
-    if (text.trimmed().isEmpty()) return;
+    if (text.trimmed().isEmpty())
+        return;
     m_client->submitComment(parentFullname, text);
 }
 
@@ -385,7 +379,8 @@ void AppController::removeSubscription(const QString& subreddit) {
 }
 
 void AppController::clearCache() {
-    if (m_cache) m_cache->clearAll();
+    if (m_cache)
+        m_cache->clearAll();
 }
 
 qint64 AppController::cacheSize() {
@@ -393,27 +388,27 @@ qint64 AppController::cacheSize() {
 }
 
 void AppController::loadSubscriptions() {
-    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
-                   + "/subscriptions.json";
+    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/subscriptions.json";
     QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) return;
-    
+    if (!file.open(QIODevice::ReadOnly))
+        return;
+
     QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
     file.close();
-    
+
     for (const auto& val : doc.array()) {
         m_subscribed.append(val.toString());
     }
 }
 
 void AppController::saveSubscriptions() {
-    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
-                   + "/subscriptions.json";
+    QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/subscriptions.json";
     QDir().mkpath(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
-    
+
     QJsonArray arr;
-    for (const auto& s : m_subscribed) arr.append(s);
-    
+    for (const auto& s : m_subscribed)
+        arr.append(s);
+
     QFile file(path);
     if (file.open(QIODevice::WriteOnly)) {
         file.write(QJsonDocument(arr).toJson());
@@ -438,7 +433,8 @@ void AppController::setAutoHideRead(bool v) {
 }
 
 void AppController::markPostRead(const QString& postId) {
-    if (postId.isEmpty()) return;
+    if (postId.isEmpty())
+        return;
     m_readPostIds.insert(postId);
 }
 
@@ -465,9 +461,8 @@ void AppController::shareUrl(const QString& url, const QString& title) {
     QGuiApplication::clipboard()->setText(shareText);
 }
 
-void AppController::submitPost(const QString& kind, const QString& subreddit,
-                                const QString& title, const QString& url,
-                                const QString& text, const QString& flair) {
+void AppController::submitPost(const QString& kind, const QString& subreddit, const QString& title, const QString& url,
+                               const QString& text, const QString& flair) {
     if (!m_loggedIn) {
         emit errorOccurred("Login required to post");
         return;
@@ -487,4 +482,4 @@ void AppController::report(const QString& thingId, const QString& reason) {
     m_client->report(thingId, reason);
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader

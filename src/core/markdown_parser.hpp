@@ -18,10 +18,10 @@ private:
     QString parseBlocks(const QString& text) const;
 
     // Spoilered text
-    static QString spoilerCss() { return
-        "background:#333;color:#333;border-radius:4px;padding:0 4px;"
-        ":hover{color:#fff;background:#555}";
+    static QString spoilerCss() {
+        return "background:#333;color:#333;border-radius:4px;padding:0 4px;"
+               ":hover{color:#fff;background:#555}";
     }
 };
 
-} // namespace PinkReader
+}  // namespace PinkReader

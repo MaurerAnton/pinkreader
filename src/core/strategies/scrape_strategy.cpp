@@ -1,4 +1,5 @@
 #include "scrape_strategy.hpp"
+
 #include "../api_routes.hpp"
 
 #include <QNetworkReply>
@@ -6,26 +7,33 @@
 
 namespace PinkReader {
 
-static QString anonBase() { return QStringLiteral("https://old.reddit.com"); }
-
-ScrapeStrategy::ScrapeStrategy(QObject* parent)
-    : ApiStrategy(parent)
-    , m_nam(new QNetworkAccessManager(this))
-{
+static QString anonBase() {
+    return QStringLiteral("https://old.reddit.com");
 }
 
+ScrapeStrategy::ScrapeStrategy(QObject* parent) : ApiStrategy(parent), m_nam(new QNetworkAccessManager(this)) {}
+
 void ScrapeStrategy::fetchFeed(const FeedRequest& request, PostCallback callback) {
-    QString path = request.subreddit.isEmpty()
-        ? QStringLiteral("/")
-        : QStringLiteral("/r/") + request.subreddit + QStringLiteral("/");
+    QString path = request.subreddit.isEmpty() ? QStringLiteral("/")
+                                               : QStringLiteral("/r/") + request.subreddit + QStringLiteral("/");
 
     QString sortStr;
     switch (request.sort) {
-    case SortOrder::New:          sortStr = QStringLiteral("new/"); break;
-    case SortOrder::Top:          sortStr = QStringLiteral("top/"); break;
-    case SortOrder::Rising:       sortStr = QStringLiteral("rising/"); break;
-    case SortOrder::Controversial: sortStr = QStringLiteral("controversial/"); break;
-    default:                      sortStr.clear(); break;
+        case SortOrder::New:
+            sortStr = QStringLiteral("new/");
+            break;
+        case SortOrder::Top:
+            sortStr = QStringLiteral("top/");
+            break;
+        case SortOrder::Rising:
+            sortStr = QStringLiteral("rising/");
+            break;
+        case SortOrder::Controversial:
+            sortStr = QStringLiteral("controversial/");
+            break;
+        default:
+            sortStr.clear();
+            break;
     }
 
     QUrl url(anonBase() + path + sortStr);
@@ -114,4 +122,4 @@ Post ScrapeStrategy::parsePostEntry(const QString& entryHtml) {
     return Post{};
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader

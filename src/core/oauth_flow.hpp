@@ -38,8 +38,7 @@ public:
 signals:
     void authUrlReady();
     void authenticatingChanged();
-    void authSuccess(const QString& accessToken, const QString& refreshToken,
-                     int expiresIn);
+    void authSuccess(const QString& accessToken, const QString& refreshToken, int expiresIn);
     void authError(const QString& error);
     void tokenRefreshed(const QString& accessToken, int expiresIn);
     void tokenRefreshError(const QString& error);
@@ -59,4 +58,4 @@ private:
     bool m_authenticating = false;
 };
 
-} // namespace PinkReader
+}  // namespace PinkReader

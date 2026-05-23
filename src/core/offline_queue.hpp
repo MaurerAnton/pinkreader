@@ -1,8 +1,8 @@
 #pragma once
 
+#include <QJsonObject>
 #include <QObject>
 #include <QVector>
-#include <QJsonObject>
 #include <functional>
 
 namespace PinkReader {
@@ -11,8 +11,8 @@ struct PendingAction {
     enum Type { Vote, Save, Hide, Comment };
     Type type;
     QString fullname;
-    int direction = 0;        // 1=up, -1=down for vote; 1=save, 0=unsave
-    QString text;             // comment text
+    int direction = 0;  // 1=up, -1=down for vote; 1=save, 0=unsave
+    QString text;       // comment text
     qint64 timestamp = 0;
 
     QJsonObject toJson() const;
@@ -54,4 +54,4 @@ private:
     bool m_flushing = false;
 };
 
-} // namespace PinkReader
+}  // namespace PinkReader

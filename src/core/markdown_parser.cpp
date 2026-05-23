@@ -7,11 +7,17 @@ namespace PinkReader {
 namespace {
 
 void closeInlines(QString& result, bool& inQuote, bool& inList, bool& inOrderedList) {
-    if (inOrderedList) { result += "</ol>\n"; inOrderedList = false; }
-    if (inList) { result += "</ul>\n"; inList = false; }
+    if (inOrderedList) {
+        result += "</ol>\n";
+        inOrderedList = false;
+    }
+    if (inList) {
+        result += "</ul>\n";
+        inList = false;
+    }
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 MarkdownParser::MarkdownParser(QObject* parent) : QObject(parent) {}
 
@@ -24,7 +30,8 @@ QString MarkdownParser::escapeHtml(const QString& text) const {
 }
 
 QString MarkdownParser::toHtml(const QString& markdown) const {
-    if (markdown.isEmpty()) return {};
+    if (markdown.isEmpty())
+        return {};
 
     QString text = markdown;
     // Normalize line endings
@@ -66,7 +73,10 @@ QString MarkdownParser::parseBlocks(const QString& text) const {
         QRegularExpression hrRe("^[-*_]{3,}\\s*$");
         if (hrRe.match(line).hasMatch()) {
             closeInlines(result, inQuote, inList, inOrderedList);
-            if (inQuote) { result += "</blockquote>\n"; inQuote = false; }
+            if (inQuote) {
+                result += "</blockquote>\n";
+                inQuote = false;
+            }
             result += "<hr/>\n";
             continue;
         }
@@ -74,18 +84,27 @@ QString MarkdownParser::parseBlocks(const QString& text) const {
         // Quote
         if (line.startsWith("> ")) {
             closeInlines(result, inQuote, inList, inOrderedList);
-            if (!inQuote) { result += "<blockquote>"; inQuote = true; }
+            if (!inQuote) {
+                result += "<blockquote>";
+                inQuote = true;
+            }
             result += parseInline(line.mid(2)) + "<br/>";
             continue;
         }
-        if (inQuote) { result += "</blockquote>\n"; inQuote = false; }
+        if (inQuote) {
+            result += "</blockquote>\n";
+            inQuote = false;
+        }
 
         // Unordered list
         QRegularExpression ulRe("^\\s*[*+-]\\s+(.+)");
         auto ulMatch = ulRe.match(line);
         if (ulMatch.hasMatch()) {
             closeInlines(result, inQuote, inList, inOrderedList);
-            if (!inList) { result += "<ul>\n"; inList = true; }
+            if (!inList) {
+                result += "<ul>\n";
+                inList = true;
+            }
             result += "<li>" + parseInline(ulMatch.captured(1)) + "</li>\n";
             continue;
         }
@@ -95,14 +114,23 @@ QString MarkdownParser::parseBlocks(const QString& text) const {
         auto olMatch = olRe.match(line);
         if (olMatch.hasMatch()) {
             closeInlines(result, inQuote, inList, inOrderedList);
-            if (!inOrderedList) { result += "<ol>\n"; inOrderedList = true; }
+            if (!inOrderedList) {
+                result += "<ol>\n";
+                inOrderedList = true;
+            }
             result += "<li>" + parseInline(olMatch.captured(1)) + "</li>\n";
             continue;
         }
 
         closeInlines(result, inQuote, inList, inOrderedList);
-        if (inList) { result += "</ul>\n"; inList = false; }
-        if (inOrderedList) { result += "</ol>\n"; inOrderedList = false; }
+        if (inList) {
+            result += "</ul>\n";
+            inList = false;
+        }
+        if (inOrderedList) {
+            result += "</ol>\n";
+            inOrderedList = false;
+        }
 
         // Heading
         QRegularExpression hRe("^(#{1,6})\\s+(.+)");
@@ -127,10 +155,11 @@ QString MarkdownParser::parseBlocks(const QString& text) const {
 
             // Next line is separator (|---|---|)
             if (i + 1 < lines.size() && lines[i + 1].contains("---")) {
-                i++; // skip separator
+                i++;  // skip separator
                 // Data rows
                 for (i = i + 1; i < lines.size(); ++i) {
-                    if (!lines[i].startsWith('|')) break;
+                    if (!lines[i].startsWith('|'))
+                        break;
                     tableHtml += "<tr>";
                     QStringList dataCells = lines[i].split('|', Qt::SkipEmptyParts);
                     for (const auto& cell : dataCells) {
@@ -156,10 +185,14 @@ QString MarkdownParser::parseBlocks(const QString& text) const {
 
     // Close remaining
     closeInlines(result, inQuote, inList, inOrderedList);
-    if (inQuote) result += "</blockquote>\n";
-    if (inList) result += "</ul>\n";
-    if (inOrderedList) result += "</ol>\n";
-    if (inCodeBlock) result += "</code></pre>\n";
+    if (inQuote)
+        result += "</blockquote>\n";
+    if (inList)
+        result += "</ul>\n";
+    if (inOrderedList)
+        result += "</ol>\n";
+    if (inCodeBlock)
+        result += "</code></pre>\n";
 
     return result;
 }
@@ -193,7 +226,8 @@ QString MarkdownParser::parseInline(const QString& text) const {
 
     // Inline code: `code`
     QRegularExpression codeRe("`([^`\\n]+)`");
-    result.replace(codeRe, "<code style='background:#2a2a3a;padding:1px 4px;border-radius:3px;font-family:monospace'>\\1</code>");
+    result.replace(
+        codeRe, "<code style='background:#2a2a3a;padding:1px 4px;border-radius:3px;font-family:monospace'>\\1</code>");
 
     // Images: ![alt](url) — must be BEFORE links
     QRegularExpression imgRe("!\\[([^\\]]*)\\]\\(([^\\)]+)\\)");
@@ -218,4 +252,4 @@ QString MarkdownParser::parseInline(const QString& text) const {
     return result;
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader

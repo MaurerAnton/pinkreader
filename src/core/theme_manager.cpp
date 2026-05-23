@@ -1,4 +1,5 @@
 #include "theme_manager.hpp"
+
 #include <QGuiApplication>
 #include <QStyleHints>
 
@@ -51,7 +52,7 @@ QColor ThemeManager::surface() const {
 }
 
 QColor ThemeManager::primary() const {
-    return QColor("#e94560"); // Pink accent - same in both themes
+    return QColor("#e94560");  // Pink accent - same in both themes
 }
 
 QColor ThemeManager::accent() const {
@@ -82,4 +83,4 @@ QColor ThemeManager::warning() const {
     return QColor("#f0a500");
 }
 
-} // namespace PinkReader
+}  // namespace PinkReader
