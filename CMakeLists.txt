@@ -22,8 +22,13 @@ find_package(Qt6 REQUIRED COMPONENTS
     Sql
     Widgets
     QuickControls2
-    Multimedia
 )
+
+# Qt6::Multimedia optional (for video playback on desktop)
+find_package(Qt6 QUIET COMPONENTS Multimedia)
+if(Qt6Multimedia_FOUND)
+    set(HAS_MULTIMEDIA ON)
+endif()
 
 # Source files - Core layer
 set(CORE_SOURCES
@@ -153,8 +158,10 @@ target_link_libraries(pinkreader PRIVATE
     Qt6::Sql
     Qt6::Widgets
     Qt6::QuickControls2
-    Qt6::Multimedia
 )
+if(HAS_MULTIMEDIA)
+    target_link_libraries(pinkreader PRIVATE Qt6::Multimedia)
+endif()
 
 # Platform-specific settings
 if(ANDROID)
