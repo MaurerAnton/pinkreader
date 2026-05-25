@@ -1,21 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <application
-        android:label="PinkReader"
-        android:theme="@style/Theme.PinkReader"
-        android:allowBackup="true"
-        android:supportsRtl="true">
-
-        <activity
-            android:name=".PinkReader"
-            android:label="PinkReader"
-            android:exported="true"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:windowSoftInputMode="adjustResize">
+    <application android:label="PinkReader" android:allowBackup="true" android:supportsRtl="true"
+        android:theme="@style/Theme.PinkReader">
+        <activity android:name=".PinkReader" android:label="PinkReader" android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden" android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -29,5 +19,7 @@
                 <data android:scheme="https" android:host="redd.it" />
             </intent-filter>
         </activity>
+        <activity android:name=".PinkReaderSettings" android:label="PinkReader Settings" android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
     </application>
 </manifest>
