@@ -1,0 +1,9 @@
+/* PinkReader Low Contrast Night Theme */
+QMainWindow, QDialog, QWidget { background-color: #2C2C2C; color: #AAAAAA; }
+QToolBar { background-color: #333333; border-bottom: 1px solid #444444; }
+QPushButton { background-color: #333333; border: 1px solid #444444; color: #AAAAAA; }
+QPushButton:hover { background-color: #3A3A3A; }
+QLineEdit, QTextEdit { background-color: #333333; border: 1px solid #444444; color: #AAAAAA; }
+QProgressBar::chunk { background-color: #888888; }
+QScrollBar:vertical { background-color: #2C2C2C; }
+QScrollBar::handle:vertical { background-color: #555555; }

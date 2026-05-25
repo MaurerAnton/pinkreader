@@ -1,0 +1,9 @@
+/* PinkReader Ultra Black Theme (pure AMOLED black) */
+QMainWindow, QDialog, QWidget { background-color: #000000; color: #C0C0C0; }
+QToolBar { background-color: #0A0A0A; border-bottom: 1px solid #2A2A2A; }
+QPushButton { background-color: #0A0A0A; border: 1px solid #2A2A2A; border-radius: 4px; padding: 6px 12px; color: #C0C0C0; }
+QPushButton:hover { background-color: #1A1A1A; }
+QLineEdit, QTextEdit { background-color: #0A0A0A; border: 1px solid #2A2A2A; color: #C0C0C0; }
+QProgressBar::chunk { background-color: #FF4081; }
+QScrollBar:vertical { background-color: #000000; }
+QScrollBar::handle:vertical { background-color: #333333; }

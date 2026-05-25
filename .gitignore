@@ -1,42 +1,45 @@
-# Build artifacts
+# Build directories
 build/
 build-*/
-*.o
-*.obj
-*.so
-*.a
-*.dll
-*.dylib
-*.exe
+out/
+cmake-build-*/
+
+# Qt
+*.pro.user
+*.pro.user.*
 moc_*.cpp
 qrc_*.cpp
 ui_*.h
 
-# Qt Creator
-*.pro.user
-*.pro.user.*
-
-# CMake
-CMakeCache.txt
-CMakeFiles/
-cmake-build-*/
-cmake_install.cmake
-Makefile
-CTestTestfile.cmake
+# Compiled objects
+*.o
+*.obj
+*.so
+*.dll
+*.dylib
+*.a
+*.lib
 
 # Android
-android/build/
-android/libs/
-android/obj/
-android/.gradle/
-android/local.properties
 *.apk
 *.aab
-*.keystore
-*.jks
+local.properties
+.gradle/
+.idea/
+app/build/
+app/.cxx/
+.cxx/
+
+# SDK artifacts
+aqtinstall.log
+redreader/
+android-sdk/
+build-android/
+
+# Tools
+tools/
 
 # IDE
-.idea/
 .vscode/
 *.swp
 *.swo
@@ -44,19 +47,15 @@ android/local.properties
 .DS_Store
 Thumbs.db
 
-# App data
-# (accounts.json is user data, not tracked)
-accounts.json
-subscriptions.json
-cache.db
+# Qt Creator
+*.autosave
+*.creator.user
 
-# Python venv (for build scripts)
-venv/
-.venv/
-__pycache__/
-*.pyc
+# Dependencies
+vendor/
+third_party/
 
-# Project-specific
-temp/
-*.log
-debug/
+# Secrets
+*.keystore
+*.jks
+secrets.properties

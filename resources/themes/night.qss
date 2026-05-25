@@ -1,0 +1,13 @@
+/* PinkReader Night Theme (AMOLED-friendly dark) */
+QMainWindow, QDialog, QWidget { background-color: #1A1A1A; color: #D0D0D0; }
+QToolBar { background-color: #252525; border-bottom: 1px solid #404040; spacing: 4px; padding: 4px; }
+QStatusBar { background-color: #252525; color: #808080; border-top: 1px solid #404040; }
+QLabel#viewTitle { color: #E0E0E0; font-weight: bold; font-size: 18px; }
+QPushButton { background-color: #252525; border: 1px solid #404040; border-radius: 4px; padding: 6px 12px; color: #D0D0D0; }
+QPushButton:hover { background-color: #333333; }
+QPushButton:pressed { background-color: #404040; }
+QLineEdit, QTextEdit { background-color: #252525; border: 1px solid #404040; border-radius: 4px; padding: 8px; color: #D0D0D0; }
+QProgressBar { background-color: #404040; border-radius: 2px; }
+QProgressBar::chunk { background-color: #FF7597; border-radius: 2px; }
+QScrollBar:vertical { background-color: #252525; width: 8px; }
+QScrollBar::handle:vertical { background-color: #505050; border-radius: 4px; }

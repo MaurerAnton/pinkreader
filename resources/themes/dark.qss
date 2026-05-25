@@ -1,0 +1,16 @@
+/* PinkReader Dark Theme */
+QMainWindow, QDialog, QWidget { background-color: #303030; color: #E0E0E0; }
+QToolBar { background-color: #424242; border-bottom: 1px solid #616161; spacing: 4px; padding: 4px; }
+QStatusBar { background-color: #424242; color: #9E9E9E; border-top: 1px solid #616161; }
+QLabel#viewTitle { color: #FFFFFF; font-weight: bold; font-size: 18px; }
+QPushButton { background-color: #424242; border: 1px solid #616161; border-radius: 4px; padding: 6px 12px; color: #E0E0E0; }
+QPushButton:hover { background-color: #505050; }
+QPushButton:pressed { background-color: #616161; }
+QPushButton:disabled { color: #616161; }
+QLineEdit, QTextEdit { background-color: #424242; border: 1px solid #616161; border-radius: 4px; padding: 8px; color: #E0E0E0; }
+QScrollArea { border: none; background-color: transparent; }
+QProgressBar { background-color: #616161; border: none; border-radius: 2px; }
+QProgressBar::chunk { background-color: #64B5F6; border-radius: 2px; }
+QScrollBar:vertical { background-color: #424242; width: 8px; }
+QScrollBar::handle:vertical { background-color: #757575; border-radius: 4px; min-height: 20px; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }

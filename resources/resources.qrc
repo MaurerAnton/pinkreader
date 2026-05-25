@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/">
+        <file>themes/light.qss</file>
+        <file>themes/dark.qss</file>
+        <file>themes/night.qss</file>
+        <file>themes/ultra_black.qss</file>
+        <file>themes/blue.qss</file>
+        <file>themes/low_contrast_night.qss</file>
+    </qresource>
+    <qresource prefix="/translations">
+        <file>translations/pinkreader_en.qm</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,7 @@
+/* PinkReader Blue Theme */
+QMainWindow, QDialog, QWidget { background-color: #E3F2FD; color: #0D47A1; }
+QToolBar { background-color: #BBDEFB; border-bottom: 1px solid #90CAF9; }
+QPushButton { background-color: #FFFFFF; border: 1px solid #64B5F6; border-radius: 4px; padding: 6px 12px; color: #1565C0; }
+QPushButton:hover { background-color: #E3F2FD; }
+QLineEdit, QTextEdit { background-color: #FFFFFF; border: 1px solid #64B5F6; color: #0D47A1; }
+QProgressBar::chunk { background-color: #1976D2; }
