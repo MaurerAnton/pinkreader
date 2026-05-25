@@ -29,6 +29,11 @@ public:
 	// Port of: public abstract boolean verifyTimestamp(TimestampUTC timestamp);
 	virtual bool verifyTimestamp(const TimestampUTC &timestamp) const = 0;
 
+	// Clone method — needed for storing TimestampBound by value
+	// Port of the implicit copy semantics in Java (since TimestampBound is abstract
+	// but concrete subclasses are stored in final fields)
+	virtual std::unique_ptr<TimestampBound> clone() const = 0;
+
 	// Port of: public static final TimestampBound ANY = new TimestampBound() {
 	//     @Override public boolean verifyTimestamp(final TimestampUTC timestamp) { return true; }
 	// };
@@ -48,9 +53,13 @@ public:
 
 		// Port of: @Override public boolean verifyTimestamp(final TimestampUTC timestamp)
 		//   return timestamp.isGreaterThan(minTimestamp);
-		bool verifyTimestamp(const TimestampUTC &timestamp) const override {
-			return timestamp.isGreaterThan(m_minTimestamp);
-		}
+	bool verifyTimestamp(const TimestampUTC &timestamp) const override {
+		return timestamp.isGreaterThan(m_minTimestamp);
+	}
+
+	std::unique_ptr<TimestampBound> clone() const override {
+		return std::make_unique<MoreRecentThanBound>(m_minTimestamp);
+	}
 
 	private:
 		// Port of: private final TimestampUTC minTimestamp;
@@ -70,17 +79,25 @@ namespace detail {
 	// Port of: ANY anonymous subclass
 	class TimestampBoundAny final : public TimestampBound {
 	public:
-		bool verifyTimestamp(const TimestampUTC & /*timestamp*/) const override {
-			return true;
-		}
+	bool verifyTimestamp(const TimestampUTC & /*timestamp*/) const override {
+		return true;
+	}
+
+	std::unique_ptr<TimestampBound> clone() const override {
+		return std::make_unique<TimestampBoundAny>();
+	}
 	};
 
 	// Port of: NONE anonymous subclass
 	class TimestampBoundNone final : public TimestampBound {
 	public:
-		bool verifyTimestamp(const TimestampUTC & /*timestamp*/) const override {
-			return false;
-		}
+	bool verifyTimestamp(const TimestampUTC & /*timestamp*/) const override {
+		return false;
+	}
+
+	std::unique_ptr<TimestampBound> clone() const override {
+		return std::make_unique<TimestampBoundNone>();
+	}
 	};
 }
 

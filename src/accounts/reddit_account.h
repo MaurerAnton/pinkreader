@@ -1,113 +1,82 @@
-/*
- * PinkReader - GPLv3
- * File: reddit_account.h - Port of RedditAccount.java
- * Exact port: every field, method, and logic branch from the original.
- */
-
+// Origin: RedReader/src/main/java/org/quantumbadger/redreader/account/RedditAccount.java
 #pragma once
 
-#include <QString>
-#include <QDateTime>
-#include <QElapsedTimer>
-#include <QMutex>
 #include <string>
-#include <memory>
+#include <cstdint>
 
 namespace PinkReader {
 
-// Port of RedditOAuth.Token / RefreshToken / AccessToken
-// Original (RedditOAuth.kt):
-//   open class Token(@JvmField val token: String)
-//   class RefreshToken(token: String?) : Token(token!!)
-//   class AccessToken(token: String?) : Token(token!!) {
-//       private val mMonotonicTimestamp = SystemClock.elapsedRealtime()
-//       val isExpired: Boolean
-//           get() { ... halfHourInMs ... }
-//   }
+// Forward declaration
+namespace RedditOAuth {
+	struct RefreshToken;
+	struct AccessToken;
+}
 
-class OAuthToken {
-public:
-    QString token;
-
-    OAuthToken() = default;
-    explicit OAuthToken(const QString &t) : token(t) {}
-    QString toString() const { return token; }
-};
-
-class OAuthAccessToken : public OAuthToken {
-public:
-    OAuthAccessToken() = default;
-    explicit OAuthAccessToken(const QString &t);
-
-    bool isExpired() const;
-
-private:
-    qint64 m_monotonicTimestamp = 0; // elapsed msec at creation
-};
-
-class OAuthRefreshToken : public OAuthToken {
-public:
-    OAuthRefreshToken() = default;
-    explicit OAuthRefreshToken(const QString &t) : OAuthToken(t) {}
-};
-
-// Port of RedditAccount.java
-// Every field, method, and logic branch ported exactly.
-
+/**
+ * @brief Port of org.quantumbadger.redreader.account.RedditAccount
+ *
+ * Represents a Reddit user account with username, refresh token, priority, and client ID.
+ * Every field and method from the original Java file.
+ */
 class RedditAccount {
 public:
-    // Fields (exact port of Java fields)
-    // public final String username;
-    // public final String canonicalUsername;
-    // public final RedditOAuth.RefreshToken refreshToken;
-    // private RedditOAuth.AccessToken accessToken;
-    // public final long priority;
-    // @Nullable public final String clientId;
-    QString username;
-    QString canonicalUsername;
-    OAuthRefreshToken refreshToken;
-    qint64 priority = 0;
-    QString clientId; // empty = null
+	// Port of: @NonNull public final String username;
+	std::string username;
+	// Port of: @NonNull public final String canonicalUsername;
+	std::string canonicalUsername;
+	// Port of: public final RedditOAuth.RefreshToken refreshToken;
+	// Nullable: empty string token = null
+	std::string refreshToken;
+	// Port of: public final long priority;
+	int64_t priority;
+	// Port of: @Nullable public final String clientId;
+	std::string clientId; // empty = null
 
-    // Constructor: RedditAccount(username, refreshToken, priority, clientId)
-    RedditAccount() = default;
-    RedditAccount(const QString &username_,
-                  const OAuthRefreshToken &refreshToken_,
-                  qint64 priority_,
-                  const QString &clientId_);
+	// Port of: private RedditOAuth.AccessToken accessToken;
+	// (synchronized access via getMostRecentAccessToken/setAccessToken)
+	std::string accessToken; // empty = null
 
-    // Port: public boolean isAnonymous()
-    bool isAnonymous() const;
+	// Port of: public RedditAccount(@NonNull final String username,
+	//   final RedditOAuth.RefreshToken refreshToken, final long priority,
+	//   @Nullable final String clientId)
+	//   if(username == null) { throw new RuntimeException("Null user in RedditAccount"); }
+	//   this.username = username.trim();
+	//   this.canonicalUsername = StringUtils.asciiLowercase(this.username);
+	//   this.refreshToken = refreshToken;
+	//   this.priority = priority;
+	//   this.clientId = clientId;
+	RedditAccount(const std::string& username, const std::string& refreshToken,
+	              int64_t priority, const std::string& clientId);
+	RedditAccount() = default;
 
-    // Port: public boolean isNotAnonymous()
-    bool isNotAnonymous() const;
+	// Port of: public boolean isAnonymous() { return username.isEmpty(); }
+	bool isAnonymous() const;
 
-    // Port: public String getCanonicalUsername()
-    QString getCanonicalUsername() const;
+	// Port of: public boolean isNotAnonymous() { return !isAnonymous(); }
+	bool isNotAnonymous() const;
 
-    // Port: public synchronized RedditOAuth.AccessToken getMostRecentAccessToken()
-    OAuthAccessToken getMostRecentAccessToken() const;
+	// Port of: public String getCanonicalUsername() { return canonicalUsername; }
+	const std::string& getCanonicalUsername() const;
 
-    // Port: public synchronized void setAccessToken(final RedditOAuth.AccessToken token)
-    void setAccessToken(const OAuthAccessToken &token);
+	// Port of: public synchronized RedditOAuth.AccessToken getMostRecentAccessToken()
+	//   return accessToken;
+	std::string getMostRecentAccessToken() const;
 
-    // Port: public boolean equals(final Object o)
-    bool equals(const RedditAccount &other) const;
-    bool operator==(const RedditAccount &other) const { return equals(other); }
-    bool operator!=(const RedditAccount &other) const { return !equals(other); }
+	// Port of: public synchronized void setAccessToken(final RedditOAuth.AccessToken token)
+	//   accessToken = token;
+	void setAccessToken(const std::string& token);
 
-    // Port: public int hashCode()
-    // Returns std::hash of canonicalUsername case-insensitive
-    size_t hashCode() const;
+	// Port of: @Override public boolean equals(final Object o)
+	//   if(!(o instanceof RedditAccount)) return false;
+	//   final RedditAccount other = (RedditAccount)o;
+	//   return canonicalUsername.equalsIgnoreCase(other.canonicalUsername)
+	//     && Objects.equals(clientId, other.clientId)
+	//     && Objects.equals(refreshToken, other.refreshToken);
+	bool equals(const RedditAccount& other) const;
 
-private:
-    mutable QMutex m_accessTokenMutex;
-    OAuthAccessToken m_accessToken;
-};
-
-// Hash specialization for use in unordered containers
-struct RedditAccountHash {
-    size_t operator()(const RedditAccount &a) const { return a.hashCode(); }
+	// Port of: @Override public int hashCode()
+	//   return getCanonicalUsername().hashCode();
+	size_t hashCode() const;
 };
 
 } // namespace PinkReader

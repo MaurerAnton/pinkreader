@@ -1,68 +1,51 @@
-/*
- * PinkReader - Open source Reddit client
- * Copyright (C) 2024-2026 PinkReader Contributors - GPLv3
- * File: settings_activity.h - Port of SettingsActivity.java
- *
- * Line-by-line translation of:
- *   redreader/src/main/java/org/quantumbadger/redreader/settings/SettingsActivity.java
- *
- * Original: public class SettingsActivity extends ViewsBaseActivity
- *
- * Every field, method, constant, and inner class ported exactly.
- */
-
+// Origin: RedReader/src/main/java/org/quantumbadger/redreader/settings/SettingsActivity.java
 #pragma once
 
-#include <QObject>
-#include <QString>
-#include <memory>
+#include <string>
 
-// Forward declarations for Android/RedReader types used in signatures
 namespace PinkReader {
-
-// Activity base classes
-class ViewsBaseActivity;
-
-// Android framework stubs
-class Bundle;
-
-// RedReader settings fragment
-class SettingsFragment;
 
 /**
  * @brief Port of org.quantumbadger.redreader.settings.SettingsActivity
  *
- * Settings activity that hosts settings panels via SettingsFragment.
- * Every field, method, constant, and inner class ported exactly.
+ * Android Activity for settings UI. Extends ViewsBaseActivity.
+ * Every method from the original Java file.
+ *
+ * NOTE: Android-specific dependencies (Activity, Fragment, Bundle, etc.)
+ * are stubbed. This serves as a logic reference for re-implementation
+ * on a target platform.
  */
-class SettingsActivity : public QObject {
-    Q_OBJECT
-
+class SettingsActivity {
 public:
-    // ===== Constructor / Lifecycle =====
-    explicit SettingsActivity(QObject *parent = nullptr);
-    virtual ~SettingsActivity();
+	// Port of: public class SettingsActivity extends ViewsBaseActivity
+	SettingsActivity() = default;
+	virtual ~SettingsActivity() = default;
 
-    // ===== Activity lifecycle (port of overrides) =====
+	// Port of: private void launchFragment(@NonNull final String panel)
+	//   final Bundle bundle = new Bundle(); bundle.putString("panel", panel);
+	//   getSupportFragmentManager().beginTransaction()
+	//     .setReorderingAllowed(false)
+	//     .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+	//     .replace(R.id.single_fragment_container, SettingsFragment.class, bundle)
+	//     .addToBackStack("Settings: " + panel)
+	//     .commit();
+	void launchFragment(const std::string& panel);
 
-    // Java lines 46-65: protected void onCreate(final Bundle savedInstanceState)
-    void onCreate(Bundle *savedInstanceState);
+	// Port of: @Override protected void onCreate(final Bundle savedInstanceState)
+	//   PrefsUtility.applySettingsTheme(this);
+	//   super.onCreate(savedInstanceState);
+	//   getWindow().setNavigationBarColor(Color.rgb(0x55, 0x55, 0x55));
+	//   setBaseActivityListing(R.layout.single_fragment_layout);
+	//   final Bundle bundle = new Bundle(); bundle.putString("panel", "root");
+	//   getSupportFragmentManager().beginTransaction()
+	//     .setReorderingAllowed(false)
+	//     .replace(R.id.single_fragment_container, SettingsFragment.class, bundle)
+	//     .commit();
+	void onCreate();
 
-    // ===== Public methods =====
-
-    // Java lines 67-69: public void onPanelSelected(@NonNull final String panel)
-    void onPanelSelected(const QString &panel);
-
-private:
-    // ===== Private methods =====
-
-    // Java lines 32-44: private void launchFragment(@NonNull final String panel)
-    void launchFragment(const QString &panel);
-
-signals:
-    // Qt signal for fragment transitions / options menu invalidations
-    void panelLaunchRequested(const QString &panel);
-    void optionsMenuInvalidated();
+	// Port of: public void onPanelSelected(@NonNull final String panel)
+	//   launchFragment(panel);
+	void onPanelSelected(const std::string& panel);
 };
 
 } // namespace PinkReader

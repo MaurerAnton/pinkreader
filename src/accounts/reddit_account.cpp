@@ -1,148 +1,82 @@
-/*
- * PinkReader - GPLv3
- * File: reddit_account.cpp - Port of RedditAccount.java
- * Exact port: every field, method, and logic branch from the original.
- */
-
+// Origin: RedReader/src/main/java/org/quantumbadger/redreader/account/RedditAccount.java
 #include "reddit_account.h"
-#include <QString>
-#include <QElapsedTimer>
+#include "../common/string_utils.h"
+#include <algorithm>
+#include <functional>
+#include <cstring>
 
 namespace PinkReader {
 
-// --- OAuthAccessToken ---
+// Port of: public RedditAccount(@NonNull final String username,
+//   final RedditOAuth.RefreshToken refreshToken, final long priority,
+//   @Nullable final String clientId)
+RedditAccount::RedditAccount(const std::string& username, const std::string& refreshToken,
+                             int64_t priority, const std::string& clientId)
+	: refreshToken(refreshToken)
+	, priority(priority)
+	, clientId(clientId) {
 
-OAuthAccessToken::OAuthAccessToken(const QString &t)
-    : OAuthToken(t)
-{
-    // Port of: private val mMonotonicTimestamp = SystemClock.elapsedRealtime()
-    QElapsedTimer timer;
-    timer.start();
-    m_monotonicTimestamp = timer.elapsed();
+	// Port of: if(username == null) { throw new RuntimeException("Null user in RedditAccount"); }
+	// (std::string cannot be null, so we skip null check)
+
+	// Port of: this.username = username.trim();
+	std::string trimmed = username;
+	trimmed.erase(0, trimmed.find_first_not_of(" \t\n\r\f\v"));
+	trimmed.erase(trimmed.find_last_not_of(" \t\n\r\f\v") + 1);
+	this->username = trimmed;
+
+	// Port of: this.canonicalUsername = StringUtils.asciiLowercase(this.username);
+	this->canonicalUsername = StringUtils::asciiLowercase(this->username);
 }
 
-bool OAuthAccessToken::isExpired() const
-{
-    // Port of:
-    //   val isExpired: Boolean
-    //       get() {
-    //           val halfHourInMs = (30 * 60 * 1000).toLong()
-    //           return mMonotonicTimestamp + halfHourInMs < SystemClock.elapsedRealtime()
-    //       }
-    const qint64 halfHourInMs = 30 * 60 * 1000L;
-
-    QElapsedTimer timer;
-    timer.start();
-    qint64 nowElapsed = timer.elapsed();  // Not exactly SystemClock.elapsedRealtime() semantics,
-                                           // but provides monotonic comparison
-
-    return m_monotonicTimestamp + halfHourInMs < nowElapsed;
+// Port of: public boolean isAnonymous() { return username.isEmpty(); }
+bool RedditAccount::isAnonymous() const {
+	return username.empty();
 }
 
-// --- RedditAccount ---
-
-// Port of constructor:
-//   public RedditAccount(
-//       @NonNull final String username,
-//       final RedditOAuth.RefreshToken refreshToken,
-//       final long priority,
-//       @Nullable final String clientId)
-RedditAccount::RedditAccount(const QString &username_,
-                             const OAuthRefreshToken &refreshToken_,
-                             qint64 priority_,
-                             const QString &clientId_)
-{
-    // Port of:
-    //   if(username == null) {
-    //       throw new RuntimeException("Null user in RedditAccount");
-    //   }
-    if (username_.isNull()) {
-        throw std::runtime_error("Null user in RedditAccount");
-    }
-
-    // Port of:
-    //   this.username = username.trim();
-    //   this.canonicalUsername = StringUtils.asciiLowercase(this.username);
-    //   this.refreshToken = refreshToken;
-    //   this.priority = priority;
-    //   this.clientId = clientId;
-    username = username_.trimmed();
-    canonicalUsername = username.toLower(); // ASCII-only lowercase for usernames (no locale folding needed)
-    refreshToken = refreshToken_;
-    priority = priority_;
-    clientId = clientId_;
+// Port of: public boolean isNotAnonymous() { return !isAnonymous(); }
+bool RedditAccount::isNotAnonymous() const {
+	return !isAnonymous();
 }
 
-// Port of: public boolean isAnonymous()
-//   return username.isEmpty();
-bool RedditAccount::isAnonymous() const
-{
-    return username.isEmpty();
-}
-
-// Port of: public boolean isNotAnonymous()
-//   return !isAnonymous();
-bool RedditAccount::isNotAnonymous() const
-{
-    return !isAnonymous();
-}
-
-// Port of: public String getCanonicalUsername()
-//   return canonicalUsername;
-QString RedditAccount::getCanonicalUsername() const
-{
-    return canonicalUsername;
+// Port of: public String getCanonicalUsername() { return canonicalUsername; }
+const std::string& RedditAccount::getCanonicalUsername() const {
+	return canonicalUsername;
 }
 
 // Port of: public synchronized RedditOAuth.AccessToken getMostRecentAccessToken()
-//   return accessToken;
-OAuthAccessToken RedditAccount::getMostRecentAccessToken() const
-{
-    QMutexLocker locker(&m_accessTokenMutex);
-    return m_accessToken;
+std::string RedditAccount::getMostRecentAccessToken() const {
+	// Port of: return accessToken;
+	// NOTE: synchronized in Java; in C++ we assume single-threaded or caller-managed sync
+	return accessToken;
 }
 
 // Port of: public synchronized void setAccessToken(final RedditOAuth.AccessToken token)
-//   accessToken = token;
-void RedditAccount::setAccessToken(const OAuthAccessToken &token)
-{
-    QMutexLocker locker(&m_accessTokenMutex);
-    m_accessToken = token;
+void RedditAccount::setAccessToken(const std::string& token) {
+	// Port of: accessToken = token;
+	accessToken = token;
 }
 
-// Port of: public boolean equals(final Object o)
-//   if(!(o instanceof RedditAccount)) { return false; }
-//   final RedditAccount other = (RedditAccount)o;
-//   return canonicalUsername.equalsIgnoreCase(other.canonicalUsername)
-//       && Objects.equals(clientId, other.clientId)
-//       && Objects.equals(refreshToken, other.refreshToken);
-bool RedditAccount::equals(const RedditAccount &other) const
-{
-    // Port of: canonicalUsername.equalsIgnoreCase(other.canonicalUsername)
-    if (canonicalUsername.compare(other.canonicalUsername, Qt::CaseInsensitive) != 0) {
-        return false;
-    }
+// Port of: @Override public boolean equals(final Object o)
+bool RedditAccount::equals(const RedditAccount& other) const {
+	// Port of: if(!(o instanceof RedditAccount)) return false;
+	// (handled by C++ type system)
 
-    // Port of: Objects.equals(clientId, other.clientId)
-    if (clientId != other.clientId) {
-        return false;
-    }
-
-    // Port of: Objects.equals(refreshToken, other.refreshToken)
-    if (refreshToken.token != other.refreshToken.token) {
-        return false;
-    }
-
-    return true;
+	// Port of: return canonicalUsername.equalsIgnoreCase(other.canonicalUsername)
+	//   && Objects.equals(clientId, other.clientId)
+	//   && Objects.equals(refreshToken, other.refreshToken);
+	// equalsIgnoreCase: compare lowercase
+	std::string thisLower = StringUtils::asciiLowercase(canonicalUsername);
+	std::string otherLower = StringUtils::asciiLowercase(other.canonicalUsername);
+	return thisLower == otherLower
+		&& clientId == other.clientId
+		&& refreshToken == other.refreshToken;
 }
 
-// Port of: public int hashCode()
-//   return getCanonicalUsername().hashCode();
-size_t RedditAccount::hashCode() const
-{
-    // Case-insensitive hash of canonicalUsername (Java uses String.hashCode()
-    // which is case-sensitive, but canonicalUsername is already lowercase)
-    return qHash(canonicalUsername);
+// Port of: @Override public int hashCode()
+size_t RedditAccount::hashCode() const {
+	// Port of: return getCanonicalUsername().hashCode();
+	return std::hash<std::string>{}(canonicalUsername);
 }
 
 } // namespace PinkReader
