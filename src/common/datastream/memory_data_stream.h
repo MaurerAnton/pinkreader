@@ -11,10 +11,9 @@
 #include <vector>
 
 #include "byte_array_callback.h"
+#include "memory_data_stream_input_stream.h"
 
 namespace PinkReader {
-
-class MemoryDataStreamInputStream;
 
 class MemoryDataStream {
 private:
@@ -191,33 +190,6 @@ public:
 	std::condition_variable& cv() { return m_cv; }
 	const std::runtime_error* failed() const { return m_failed; }
 	bool complete() const { return m_complete; }
-};
-
-// MemoryDataStreamInputStream stub (inner class in Java)
-class MemoryDataStreamInputStream {
-private:
-	MemoryDataStream& m_stream;
-	int m_position;
-
-public:
-	explicit MemoryDataStreamInputStream(MemoryDataStream& stream)
-		: m_stream(stream), m_position(0) {}
-
-	int read() {
-		int result = m_stream.blockingReadOneByte(m_position);
-		if(result >= 0) {
-			m_position++;
-		}
-		return result;
-	}
-
-	int read(uint8_t* buf, int offset, int length) {
-		int result = m_stream.blockingRead(m_position, buf, offset, length);
-		if(result > 0) {
-			m_position += result;
-		}
-		return result;
-	}
 };
 
 inline MemoryDataStreamInputStream* MemoryDataStream::getInputStream() {
