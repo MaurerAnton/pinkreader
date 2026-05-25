@@ -1,26 +1,25 @@
 /*
  * PinkReader - GPLv3
  * File: json_value.h
- * Port of: jsonwrap/JsonValue.java, JsonObject.java, JsonArray.java,
- *          JsonBoolean.java, JsonNull.java, JsonLong.java,
- *          JsonDouble.java, JsonString.java
- *
+ * Port of: jsonwrap/JsonValue.java
  * Every field, method, inner class matches exactly.
  * Uses Qt6 QJsonValue/QJsonDocument as the underlying parser.
  */
 
 #pragma once
 
-#include <QJsonValue>
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QJsonDocument>
 #include <QString>
 #include <QVector>
 #include <QHash>
 #include <QVariant>
-#include <memory>
+#include <QIODevice>
+#include <QJsonValue>
+#include <QJsonObject>
+#include <QJsonArray>
 #include <stdexcept>
+#include <optional>
+#include <memory>
+#include <initializer_list>
 
 namespace PinkReader {
 
@@ -138,321 +137,59 @@ class JsonValue {
 public:
     virtual ~JsonValue() = default;
 
-    // Port of: @NonNull public static JsonValue parse(final InputStream source) throws IOException
+    // Port of: @NonNull public static JsonValue parse(final InputStream source) throws IOException (JsonValue.java:35-37)
     static std::unique_ptr<JsonValue> parse(class QIODevice &source);
 
-    // Port of: @NonNull public static JsonValue parse(final JsonParser parser) throws IOException
+    // Port of: @NonNull public static JsonValue parse(final JsonParser parser) throws IOException (JsonValue.java:39-94)
     // In C++, we accept a QJsonValue instead of Jackson JsonParser
     static std::unique_ptr<JsonValue> parse(const QJsonValue &value);
 
-    // Port of: @Nullable public JsonObject asObject()
+    // Port of: @Nullable public JsonObject asObject() (JsonValue.java:97-100)
     virtual JsonObject *asObject() { return nullptr; }
 
-    // Port of: @Nullable public <E extends JsonObject.JsonDeserializable> E asObject(final Class<E> clazz)
-    // NOTE: Reflection-based deserialization is not directly portable.
-    // Subclasses override. Default returns nullptr.
-    // In C++, deserializable types should override this or use populateObject.
+    // Port of: @Nullable public <E extends JsonObject.JsonDeserializable> E asObject(final Class<E> clazz) (JsonValue.java:102-111)
+    // NOTE: Reflection-based; handled by JsonObject subclass.
 
-    // Port of: @Nullable public JsonArray asArray()
+    // Port of: @Nullable public JsonArray asArray() (JsonValue.java:114-117)
     virtual JsonArray *asArray() { return nullptr; }
 
-    // Port of: @Nullable public Boolean asBoolean()
+    // Port of: @Nullable public Boolean asBoolean() (JsonValue.java:120-123)
     virtual bool *asBoolean() { return nullptr; }
-    // Convenience: returns std::optional<bool>
     virtual std::optional<bool> asBoolValue() const { return std::nullopt; }
 
-    // Port of: @Nullable public String asString()
+    // Port of: @Nullable public String asString() (JsonValue.java:126-129)
     virtual QString *asString() { return nullptr; }
-    // Convenience: returns std::optional<QString>
     virtual std::optional<QString> asStringValue() const { return std::nullopt; }
 
-    // Port of: @Nullable public Double asDouble()
+    // Port of: @Nullable public Double asDouble() (JsonValue.java:132-135)
     virtual double *asDouble() { return nullptr; }
     virtual std::optional<double> asDoubleValue() const { return std::nullopt; }
 
-    // Port of: @Nullable public Long asLong()
+    // Port of: @Nullable public Long asLong() (JsonValue.java:138-141)
     virtual int64_t *asLong() { return nullptr; }
     virtual std::optional<int64_t> asLongValue() const { return std::nullopt; }
 
-    // Port of: @Override public String toString()
-    // (using Qt's QDebug stream operator, or toString method)
+    // Port of: @Override public String toString() (JsonValue.java:143-148)
     virtual QString toString() const;
 
-    // Port of: protected abstract void prettyPrint(int indent, StringBuilder sb)
+    // Port of: protected abstract void prettyPrint(int indent, StringBuilder sb) (JsonValue.java:150)
     virtual void prettyPrint(int indent, QString &sb) const = 0;
 
-    // Port of: @NonNull public final Optional<JsonValue> getAtPath(final Object... keys)
+    // Port of: @NonNull public final Optional<JsonValue> getAtPath(final Object... keys) (JsonValue.java:152-155)
     Optional<JsonValue *> getAtPath(std::initializer_list<QVariant> keys) const;
 
-    // Port of: @NonNull public final Optional<JsonObject> getObjectAtPath(final Object... keys)
+    // Port of: @NonNull public final Optional<JsonObject> getObjectAtPath(final Object... keys) (JsonValue.java:157-167)
     Optional<JsonObject *> getObjectAtPath(std::initializer_list<QVariant> keys) const;
 
-    // Port of: @NonNull public final Optional<JsonArray> getArrayAtPath(final Object... keys)
+    // Port of: @NonNull public final Optional<JsonArray> getArrayAtPath(final Object... keys) (JsonValue.java:169-179)
     Optional<JsonArray *> getArrayAtPath(std::initializer_list<QVariant> keys) const;
 
-    // Port of: @NonNull public final Optional<String> getStringAtPath(final Object... keys)
+    // Port of: @NonNull public final Optional<String> getStringAtPath(final Object... keys) (JsonValue.java:181-191)
     Optional<QString> getStringAtPath(std::initializer_list<QVariant> keys) const;
 
 protected:
-    // Port of: @NonNull protected Optional<JsonValue> getAtPathInternal(final int offset, final Object... keys)
+    // Port of: @NonNull protected Optional<JsonValue> getAtPathInternal(final int offset, final Object... keys) (JsonValue.java:194-203)
     virtual Optional<JsonValue *> getAtPathInternal(int offset, const QVector<QVariant> &keys);
-};
-
-
-// ============================================================================
-// JsonObject — Port of org.quantumbadger.redreader.jsonwrap.JsonObject
-// Every field, method, inner class matches exactly.
-// ============================================================================
-
-class JsonObject : public JsonValue {
-public:
-    // Port of: public interface JsonDeserializable {}
-    class JsonDeserializable {
-    public:
-        virtual ~JsonDeserializable() = default;
-    };
-
-    // Port of: protected JsonObject(final JsonParser parser) throws IOException
-    explicit JsonObject(const QJsonObject &obj);
-
-    // Port of: public boolean isEmpty()
-    bool isEmpty() const { return m_properties.isEmpty(); }
-
-    // Port of: @NonNull @Override public JsonObject asObject()
-    JsonObject *asObject() override { return this; }
-
-    // Port of: @Nullable public JsonValue get(final String name)
-    JsonValue *get(const QString &name) const;
-
-    // Port of: @Nullable public String getString(@NonNull final String id)
-    QString getString(const QString &id) const;
-
-    // Port of: @Nullable public Long getLong(@NonNull final String id)
-    std::optional<int64_t> getLong(const QString &id) const;
-
-    // Port of: @Nullable public Double getDouble(@NonNull final String id)
-    std::optional<double> getDouble(const QString &id) const;
-
-    // Port of: @Nullable public Boolean getBoolean(@NonNull final String id)
-    std::optional<bool> getBoolean(const QString &id) const;
-
-    // Port of: @Nullable public JsonObject getObject(@NonNull final String id)
-    JsonObject *getObject(const QString &id) const;
-
-    // Port of: @Nullable public JsonArray getArray(@NonNull final String id)
-    JsonArray *getArray(const QString &id) const;
-
-    // Port of: @Override protected void prettyPrint(final int indent, final StringBuilder sb)
-    void prettyPrint(int indent, QString &sb) const override;
-
-    // Port of: public void populateObject(final Object o)
-    // (Reflection-based; in C++ this is simplified. Subclasses handle their own deserialization.)
-
-    // Port of: @NonNull @Override protected Optional<JsonValue> getAtPathInternal(final int offset, final Object... keys)
-    Optional<JsonValue *> getAtPathInternal(int offset, const QVector<QVariant> &keys) override;
-
-private:
-    // Port of: private final HashMap<String, JsonValue> properties = new HashMap<>()
-    QHash<QString, std::unique_ptr<JsonValue>> m_properties;
-};
-
-
-// ============================================================================
-// JsonArray — Port of org.quantumbadger.redreader.jsonwrap.JsonArray
-// Every field, method matches exactly.
-// ============================================================================
-
-class JsonArray : public JsonValue {
-public:
-    // Port of: protected JsonArray(final JsonParser parser) throws IOException
-    explicit JsonArray(const QJsonArray &arr);
-
-    // Port of: @NonNull @Override public JsonArray asArray()
-    JsonArray *asArray() override { return this; }
-
-    // Port of: @NonNull public JsonValue get(final int id)
-    JsonValue *get(int id) const;
-
-    // Port of: @Nullable public String getString(final int id)
-    QString getString(int id) const;
-
-    // Port of: @Nullable public Long getLong(final int id)
-    std::optional<int64_t> getLong(int id) const;
-
-    // Port of: @Nullable public Double getDouble(final int id)
-    std::optional<double> getDouble(int id) const;
-
-    // Port of: @Nullable public Boolean getBoolean(final int id)
-    std::optional<bool> getBoolean(int id) const;
-
-    // Port of: @Nullable public JsonObject getObject(final int id)
-    JsonObject *getObject(int id) const;
-
-    // Port of: @Nullable public JsonArray getArray(final int id)
-    JsonArray *getArray(int id) const;
-
-    // Port of: @Override protected void prettyPrint(final int indent, final StringBuilder sb)
-    void prettyPrint(int indent, QString &sb) const override;
-
-    // Port of: public int size()
-    int size() const { return m_contents.size(); }
-
-    // Port of: @NonNull @Override protected Optional<JsonValue> getAtPathInternal(final int offset, final Object... keys)
-    Optional<JsonValue *> getAtPathInternal(int offset, const QVector<QVariant> &keys) override;
-
-    // Port of: public Iterator<JsonValue> iterator()
-    // (Implicit via QVector iteration)
-
-    // Port of: public void forEachObject(final Consumer<JsonObject> consumer)
-    template<typename Consumer>
-    void forEachObject(Consumer consumer) {
-        for (auto &val : m_contents) {
-            consumer(val->asObject());
-        }
-    }
-
-private:
-    // Port of: private final ArrayList<JsonValue> mContents = new ArrayList<>(16)
-    QVector<std::unique_ptr<JsonValue>> m_contents;
-};
-
-
-// ============================================================================
-// JsonBoolean — Port of org.quantumbadger.redreader.jsonwrap.JsonBoolean
-// ============================================================================
-
-class JsonBoolean : public JsonValue {
-public:
-    // Port of: @NonNull public static final JsonBoolean TRUE = new JsonBoolean(true)
-    static const JsonBoolean TRUE;
-    // Port of: @NonNull public static final JsonBoolean FALSE = new JsonBoolean(false)
-    static const JsonBoolean FALSE;
-
-    // Port of: @Override protected void prettyPrint(final int indent, final StringBuilder sb)
-    void prettyPrint(int indent, QString &sb) const override;
-
-    // Port of: @Override @NonNull public Boolean asBoolean()
-    bool *asBoolean() override;
-    std::optional<bool> asBoolValue() const override { return m_value; }
-
-private:
-    // Port of: private final boolean mValue
-    bool m_value;
-
-    // Port of: private JsonBoolean(final boolean value)
-    explicit JsonBoolean(bool value) : m_value(value) {}
-};
-
-
-// ============================================================================
-// JsonNull — Port of org.quantumbadger.redreader.jsonwrap.JsonNull
-// ============================================================================
-
-class JsonNull : public JsonValue {
-public:
-    // Port of: @NonNull public static final JsonNull INSTANCE = new JsonNull()
-    static const JsonNull INSTANCE;
-
-    // Port of: @Override protected void prettyPrint(final int indent, final StringBuilder sb)
-    void prettyPrint(int indent, QString &sb) const override;
-
-private:
-    // Port of: private JsonNull() {}
-    JsonNull() = default;
-};
-
-
-// ============================================================================
-// JsonLong — Port of org.quantumbadger.redreader.jsonwrap.JsonLong
-// ============================================================================
-
-class JsonLong : public JsonValue {
-public:
-    // Port of: public JsonLong(final long value)
-    explicit JsonLong(int64_t value) : m_value(value) {}
-
-    // Port of: @Override protected void prettyPrint(final int indent, final StringBuilder sb)
-    void prettyPrint(int indent, QString &sb) const override;
-
-    // Port of: @NonNull @Override public String asString()
-    QString *asString() override;
-    std::optional<QString> asStringValue() const override;
-
-    // Port of: @NonNull @Override public Double asDouble()
-    double *asDouble() override;
-    std::optional<double> asDoubleValue() const override;
-
-    // Port of: @NonNull @Override public Long asLong()
-    int64_t *asLong() override;
-    std::optional<int64_t> asLongValue() const override;
-
-private:
-    // Port of: private final long mValue
-    int64_t m_value;
-};
-
-
-// ============================================================================
-// JsonDouble — Port of org.quantumbadger.redreader.jsonwrap.JsonDouble
-// ============================================================================
-
-class JsonDouble : public JsonValue {
-public:
-    // Port of: protected JsonDouble(final double value)
-    explicit JsonDouble(double value) : m_value(value) {}
-
-    // Port of: @Override protected void prettyPrint(final int indent, final StringBuilder sb)
-    void prettyPrint(int indent, QString &sb) const override;
-
-    // Port of: @NonNull @Override public String asString()
-    QString *asString() override;
-    std::optional<QString> asStringValue() const override;
-
-    // Port of: @NonNull @Override public Double asDouble()
-    double *asDouble() override;
-    std::optional<double> asDoubleValue() const override;
-
-    // Port of: @NonNull @Override public Long asLong()
-    int64_t *asLong() override;
-    std::optional<int64_t> asLongValue() const override;
-
-private:
-    // Port of: private final double mValue
-    double m_value;
-};
-
-
-// ============================================================================
-// JsonString — Port of org.quantumbadger.redreader.jsonwrap.JsonString
-// ============================================================================
-
-class JsonString : public JsonValue {
-public:
-    // Port of: protected JsonString(@NonNull final String value)
-    explicit JsonString(const QString &value) : m_value(value) {}
-
-    // Port of: @Override protected void prettyPrint(final int indent, final StringBuilder sb)
-    void prettyPrint(int indent, QString &sb) const override;
-
-    // Port of: @Nullable @Override public Boolean asBoolean()
-    bool *asBoolean() override;
-    std::optional<bool> asBoolValue() const override;
-
-    // Port of: @NonNull @Override public String asString()
-    QString *asString() override;
-    std::optional<QString> asStringValue() const override;
-
-    // Port of: @Nullable @Override public Double asDouble()
-    double *asDouble() override;
-    std::optional<double> asDoubleValue() const override;
-
-    // Port of: @Nullable @Override public Long asLong()
-    int64_t *asLong() override;
-    std::optional<int64_t> asLongValue() const override;
-
-private:
-    // Port of: @NonNull private final String mValue
-    QString m_value;
 };
 
 } // namespace PinkReader
