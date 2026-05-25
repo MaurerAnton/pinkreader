@@ -370,8 +370,8 @@ class PinkReader : AppCompatActivity() {
             for(i in 0 until arr.length()){
                 val o=arr.getJSONObject(i)
                 val id=o.optString("id")
-                synchronized(this){ if(postIds.contains(id)) continue; postIds.add(id) }
-                posts.add(parsePost(o)) }
+                synchronized(this){ if(postIds.contains(id)){ /*skip*/ } else { postIds.add(id); posts.add(parsePost(o)) } }
+                if(postIds.contains(id)) continue
             if(posts.isNotEmpty()) synchronized(this){ after="t3_"+posts.last().id }
             safePost{
                 postAdapter.setData(posts); loadingBar.visibility=View.GONE; refresh.isRefreshing=false; isLoading=false
@@ -394,8 +394,8 @@ class PinkReader : AppCompatActivity() {
             for(i in 0 until arr.length()){
                 val o=arr.getJSONObject(i)
                 val id=o.optString("id")
-                synchronized(this){ if(postIds.contains(id)) continue; postIds.add(id) }
-                posts.add(parsePost(o)) }
+                synchronized(this){ if(postIds.contains(id)){ /*skip*/ } else { postIds.add(id); posts.add(parsePost(o)) } }
+                if(postIds.contains(id)) continue
             if(posts.isNotEmpty()) synchronized(this){ after="t3_"+posts.last().id }
             safePost{ postAdapter.addData(posts); isLoading=false } }
         catch(ex:Exception){ safePost{ isLoading=false } }}}
