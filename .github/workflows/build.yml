@@ -9,12 +9,8 @@ on:
 
 jobs:
   build:
-    name: "Build APK"
+    name: "Build & Release APK"
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        build-type: [debug, release]
 
     steps:
       - uses: actions/checkout@v4
@@ -25,83 +21,83 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: |
-            platforms;android-35
-            build-tools;35.0.0
-            ndk;27.0.12077973
-            cmake;3.22.1
-            platform-tools
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build APK
-        run: ./gradlew assemble${{ matrix.build-type == 'release' && 'Release' || 'Debug' }} --no-daemon
+      - name: Accept Android SDK licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
 
-      - name: Upload APK
+      - name: Install Android SDK components
+        run: |
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;27.0.12077973" \
+            "cmake;3.22.1" \
+            "platform-tools" \
+            2>&1 | tail -5
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: PinkReader-${{ matrix.build-type }}
-          path: app/build/outputs/apk/${{ matrix.build-type }}/app-${{ matrix.build-type }}.apk
+          name: PinkReader-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 90
           if-no-files-found: error
 
-  release:
-    name: "Create Release"
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - uses: actions/download-artifact@v4
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
         with:
-          pattern: PinkReader-*
-          merge-multiple: true
-          path: apks
+          name: PinkReader-release
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          retention-days: 90
+          if-no-files-found: error
 
-      - name: List APKs
-        run: ls -lh apks/
-
-      - name: Generate checksums
-        run: cd apks && sha256sum *.apk > SHA256SUMS
-
-      - name: Delete old release
+      - name: Delete old latest release
         continue-on-error: true
         run: gh release delete latest --yes --cleanup-tag 2>/dev/null || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Release
+      - name: Create GitHub Release with APKs
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: "PinkReader - Latest Build"
           body: |
-            ## PinkReader APK Download
+            ## PinkReader APK Downloads
 
             ### Debug APK
-            `PinkReader-debug/app-debug.apk` — for testing and development
+            `app-debug.apk` — for testing (installable on any Android 5.0+ device)
 
-            ### Release APK
-            `PinkReader-release/app-release.apk` — unsigned release build
+            ### Release APK (unsigned)
+            `app-release-unsigned.apk` — unsigned release build
 
-            ### Install
-            1. Download the APK
-            2. Enable "Install from unknown sources" in Android settings
-            3. Open the APK to install
+            ### How to Install
+            1. Download the APK for your architecture
+            2. On Android, enable **Settings → Security → Unknown sources**
+            3. Open the APK file to install
+
+            ### Native Libraries (all 4 ABIs included)
+            - arm64-v8a (most modern phones)
+            - armeabi-v7a (older 32-bit phones)
+            - x86 (emulator)
+            - x86_64 (emulator)
 
             ### Verify
             ```bash
-            sha256sum -c SHA256SUMS
+            unzip -l app-debug.apk | grep "\.so"
             ```
-
-            ### Source
-            This is an automated build from the `main` branch.
           files: |
-            apks/**/*.apk
-            apks/SHA256SUMS
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/release/app-release-unsigned.apk
           prerelease: false
           make_latest: true
         env:
