@@ -1,86 +1,79 @@
 /*
- * PinkReader - Open source Reddit client for Android
- * Copyright (C) 2024-2026 PinkReader Contributors
+ * PinkReader - Open source Reddit client
+ * Copyright (C) 2024-2026 PinkReader Contributors - GPLv3
+ * File: redgifs_api.h - Port of RedReader's RedgifsAPI.java
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Line-by-line translation of:
+ *   redreader/src/main/java/org/quantumbadger/redreader/image/RedgifsAPI.java
  *
- * ... (full GPLv3 license) ...
+ * Original: public final class RedgifsAPI
+ * One static method: getImageInfo
  *
- * File: redgifs_api.h
- * Description: RedGIFs API v2 integration
+ * Every field, method, and inner class ported exactly.
+ * Android-specific Context is replaced with a forward-declared stub.
  */
 
 #pragma once
 
-#include <QObject>
 #include <QString>
-#include <QUrl>
-#include <QJsonObject>
-#include <QVector>
+#include <QUuid>
 #include <functional>
+#include <memory>
+#include <optional>
+#include <string>
 
 namespace PinkReader {
 
-/**
- * @brief Image/video information returned by host APIs
- */
-struct ImageInfo {
-    QString url;           ///< Direct media URL
-    QString thumbnailUrl;  ///< Thumbnail URL
-    QString title;         ///< Media title/caption
-    QString description;   ///< Media description
-    int width = 0;         ///< Width in pixels
-    int height = 0;        ///< Height in pixels
-    qint64 sizeBytes = 0;  ///< File size in bytes
-    QString mimeType;      ///< MIME type
-    bool isVideo = false;  ///< Whether this is a video
-    bool isGif = false;    ///< Whether this is a GIF
-    bool hasAudio = false; ///< Whether video has audio track
-    double duration = 0.0; ///< Duration in seconds (video only)
-};
+// ============================================================================
+// Forward declarations for types used in RedgifsAPI
+// ============================================================================
 
-/**
- * @brief RedGIFs API v2 integration
- */
-class RedgifsApi : public QObject
-{
-    Q_OBJECT
+class RRError;
+class UriString;
+class Context;
+class CacheManager;
+class CacheRequest;
+class TimestampUTC;
 
+// Forward: GetImageInfoListener (defined in imgur_api.h or image_imgur_api.h)
+class GetImageInfoListener;
+
+// ============================================================================
+// RedgifsAPI — port of public final class RedgifsAPI (Java line 44)
+//
+// Port of: org.quantumbadger.redreader.image.RedgifsAPI
+// Public final class with one static method.
+// Every field, method ported exactly.
+// ============================================================================
+
+class RedgifsAPI {
 public:
-    using ImageCallback = std::function<void(
-        bool success,
-        const QVector<ImageInfo> &images,
-        const QString &errorMessage
-    )>;
+    // Prevent instantiation (Java: final class)
+    RedgifsAPI() = delete;
+    ~RedgifsAPI() = delete;
 
-    explicit RedgifsApi(QObject *parent = nullptr);
-    ~RedgifsApi() override;
-
-    virtual bool canHandleUrl(const QUrl &url) const;
-    virtual QString hostName() const;
-
-    virtual void fetchImages(const QUrl &url,
-                              ImageCallback callback);
-    virtual void fetchImageInfo(const QUrl &url,
-                                 ImageCallback callback);
-    virtual QUrl directUrl(const QUrl &url) const;
-
-    void setApiKey(const QString &key);
-    QString apiKey() const;
-
-    void setEnabled(bool enabled);
-    bool isEnabled() const;
-
-signals:
-    void imageFetched(const QUrl &url, const ImageInfo &info);
-    void fetchError(const QUrl &url, const QString &error);
-
-protected:
-    QString m_apiKey;
-    bool m_enabled = true;
+    // ========================================================================
+    // getImageInfo — port of Java static method (Java lines 46-92)
+    //
+    // Port of:
+    //   public static void getImageInfo(
+    //       final Context context,
+    //       final String imageId,
+    //       @NonNull final Priority priority,
+    //       final GetImageInfoListener listener)
+    //
+    // Builds API URL "https://api.redgifs.com/v1/gfycats/{imageId}"
+    // Uses DownloadStrategyIfTimestampOutsideBounds(10 minutes) for caching
+    //   instead of DownloadStrategyIfNotCached (RedGifs links expire).
+    // Creates CacheRequest via CacheManager with CacheRequestJSONParser callback.
+    // On success: calls ImageInfo.parseGfycat(outer) then listener.onSuccess
+    // On failure: calls General.getGeneralErrorForFailure then listener.onFailure
+    // ========================================================================
+    static void getImageInfo(
+            Context &context,
+            const QString &imageId,
+            int priority,                       // Priority as int (see constants.h:Priority)
+            GetImageInfoListener &listener);
 };
 
 } // namespace PinkReader

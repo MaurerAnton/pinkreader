@@ -1,15 +1,15 @@
 /*
  * PinkReader - Open source Reddit client
  * Copyright (C) 2024-2026 PinkReader Contributors - GPLv3
- * File: redgifs_api.cpp - Port of RedReader's RedgifsAPI.java (implementation)
+ * File: image_imgur_api.cpp - Port of RedReader's ImgurAPI.java (image package, implementation)
  *
  * Line-by-line translation of:
- *   redreader/src/main/java/org/quantumbadger/redreader/image/RedgifsAPI.java
+ *   redreader/src/main/java/org/quantumbadger/redreader/image/ImgurAPI.java
  *
  * Every field, method, and inner class ported exactly.
  */
 
-#include "network/image_hosts/redgifs_api.h"
+#include "network/image_hosts/image_imgur_api.h"
 #include "accounts/reddit_account_manager.h"
 #include "cache/cache_manager.h"
 #include "cache/cache_request.h"
@@ -61,16 +61,33 @@ private:
 };
 
 // ============================================================================
-// ImageInfo stub — port of org.quantumbadger.redreader.image.ImageInfo.parseGfycat
+// AlbumInfo stub — full port would be in models/
+// Port of: org.quantumbadger.redreader.image.AlbumInfo.parseImgur
+// ============================================================================
+
+class AlbumInfo {
+public:
+    // Port of: AlbumInfo.parseImgur(url, outer) (Java ImgurAPI line 76)
+    static AlbumInfo parseImgur(const UriString &albumUrl, const JsonObject &outer) {
+        // Full implementation requires AlbumInfo.kt port
+        (void)albumUrl;
+        (void)outer;
+        throw std::runtime_error("AlbumInfo::parseImgur not yet ported");
+    }
+};
+
+// ============================================================================
+// ImageInfo stub — full port would be in models/
+// Port of: org.quantumbadger.redreader.image.ImageInfo.parseImgur
 // ============================================================================
 
 class ImageInfo {
 public:
-    // Port of: ImageInfo.parseGfycat(outer) (Java RedgifsAPI line 75)
-    static ImageInfo parseGfycat(const JsonObject &outer) {
+    // Port of: ImageInfo.parseImgur(outer) (Java ImgurAPI line 124)
+    static ImageInfo parseImgur(const JsonObject &outer) {
         // Full implementation requires ImageInfo.kt port
         (void)outer;
-        throw std::runtime_error("ImageInfo::parseGfycat not yet ported");
+        throw std::runtime_error("ImageInfo::parseImgur not yet ported");
     }
 };
 
@@ -98,7 +115,7 @@ public:
         virtual void onFailure(const RRError &error) = 0;
     };
 
-    // Port of: CacheRequestJSONParser(Context, Listener)
+    // Port of: CacheRequestJSONParser(Context, Listener) (Java ImgurAPI line 63-64)
     CacheRequestJSONParser(Context &context, Listener &listener)
         : m_context(context)
         , m_listener(listener) {}
@@ -133,11 +150,12 @@ public:
         }
     }
 
-    // Port of: onFailure (from CacheRequestCallbacks)
+    // Port of: onFailure (from CacheRequestCallbacks) (Java ImgurAPI line 90-92)
     void onFailure(const RRError &error) override {
         m_listener.onFailure(error);
     }
 
+    // Store the API URL for error reporting
     void setApiUrl(const UriString &url) { m_apiUrl = url; }
 
 private:
@@ -147,61 +165,38 @@ private:
 };
 
 // ============================================================================
-// DownloadStrategyIfTimestampOutsideBounds — port of download strategy
-//
-// Port of: org.quantumbadger.redreader.cache.downloadstrategy
-//     .DownloadStrategyIfTimestampOutsideBounds
-//
-// Used instead of DownloadStrategyIfNotCached because RedGifs links expire
-// after an undocumented period of time.
+// getAlbumInfo — port of Java static method (Java lines 44-93)
 // ============================================================================
 
-class DownloadStrategyIfTimestampOutsideBounds {
-public:
-    // Port of: new DownloadStrategyIfTimestampOutsideBounds(
-    //     TimestampBound.notOlderThan(TimeDuration.minutes(10))) (Java lines 60-61)
-    static const DownloadStrategyIfTimestampOutsideBounds &instance() {
-        static DownloadStrategyIfTimestampOutsideBounds inst;
-        return inst;
-    }
-
-    // INSTANCE equivalent for CacheRequest construction
-    static const DownloadStrategyIfTimestampOutsideBounds INSTANCE;
-};
-
-const DownloadStrategyIfTimestampOutsideBounds
-    DownloadStrategyIfTimestampOutsideBounds::INSTANCE;
-
-// ============================================================================
-// getImageInfo — port of Java static method (Java lines 46-92)
-// ============================================================================
-
-void RedgifsAPI::getImageInfo(
+void ImgurAPI::getAlbumInfo(
         Context &context,
-        const QString &imageId,
+        const UriString &albumUrl,
+        const QString &albumId,
         int priority,
-        GetImageInfoListener &listener) {
+        GetAlbumInfoListener &listener) {
 
-    // Port of: final UriString apiUrl = new UriString(
-    //     "https://api.redgifs.com/v1/gfycats/" + imageId); (Java line 52)
-    const UriString apiUrl("https://api.redgifs.com/v1/gfycats/" + imageId);
+    // Port of: final UriString apiUrl = new UriString("https://api.imgur.com/2/album/"
+    //         + albumId + ".json"); (Java lines 51-52)
+    const UriString apiUrl("https://api.imgur.com/2/album/" + albumId + ".json");
 
     // Port of: CacheManager.getInstance(context).makeRequest(new CacheRequest(...))
-    // (Java lines 54-92)
+    // (Java lines 54-93)
 
     // Create the JSON parser listener (anonymous inner class in Java)
-    // Port of: new CacheRequestJSONParser.Listener() { ... } (Java lines 65-92)
-    class RedgifsParserListener : public CacheRequestJSONParser::Listener {
+    // Port of: new CacheRequestJSONParser.Listener() { ... } (Java lines 65-87)
+    class AlbumParserListener : public CacheRequestJSONParser::Listener {
     public:
-        RedgifsParserListener(
+        AlbumParserListener(
                 Context &context,
+                const UriString &albumUrl,
                 const UriString &apiUrl,
-                GetImageInfoListener &listener)
+                GetAlbumInfoListener &listener)
             : m_context(context)
+            , m_albumUrl(albumUrl)
             , m_apiUrl(apiUrl)
             , m_listener(listener) {}
 
-        // Port of: onJsonParsed (Java lines 67-84)
+        // Port of: onJsonParsed (Java lines 67-86)
         void onJsonParsed(
                 const JsonValue &result,
                 const TimestampUTC &timestamp,
@@ -212,14 +207,14 @@ void RedgifsAPI::getImageInfo(
             (void)fromCache;
             try {
                 // Port of: final JsonObject outer = result.asObject()
-                //     .getObject("gfyItem"); (Java line 74)
-                const JsonObject outer = result.asObject().getObject("gfyItem");
+                //     .getObject("album"); (Java line 75)
+                const JsonObject outer = result.asObject().getObject("album");
 
-                // Port of: listener.onSuccess(ImageInfo.parseGfycat(outer));
-                // (Java line 75)
-                m_listener.onSuccess(ImageInfo::parseGfycat(outer));
+                // Port of: listener.onSuccess(AlbumInfo.parseImgur(albumUrl, outer));
+                // (Java line 76)
+                m_listener.onSuccess(AlbumInfo::parseImgur(m_albumUrl, outer));
             } catch (const std::exception &t) {
-                // Port of: catch(final Throwable t) { ... } (Java lines 77-85)
+                // Port of: catch(final Throwable t) { ... } (Java lines 78-86)
                 RRError error = General::getGeneralErrorForFailure(
                     General::RequestFailureType::PARSE,
                     QString::fromStdString(t.what()),
@@ -229,7 +224,99 @@ void RedgifsAPI::getImageInfo(
             }
         }
 
-        // Port of: onFailure (Java lines 89-91)
+        // Port of: onFailure (Java lines 90-92)
+        void onFailure(const RRError &error) override {
+            m_listener.onFailure(error);
+        }
+
+    private:
+        Context &m_context;
+        UriString m_albumUrl;
+        UriString m_apiUrl;
+        GetAlbumInfoListener &m_listener;
+    };
+
+    AlbumParserListener parserListener(context, albumUrl, apiUrl, listener);
+
+    // Create the JSON parser wrapper
+    CacheRequestJSONParser jsonParser(context, parserListener);
+    jsonParser.setApiUrl(apiUrl);
+
+    // Build CacheRequest
+    const RedditAccount &anonAccount = RedditAccountManager::getAnon();
+
+    CacheRequest request(
+        apiUrl,
+        anonAccount,
+        std::nullopt,
+        priority,
+        DownloadStrategyIfNotCached::INSTANCE,
+        FileType::IMAGE_INFO,
+        CacheRequest::DownloadQueueType::IMMEDIATE,
+        jsonParser);
+
+    // Port of: CacheManager.getInstance(context).makeRequest(request);
+    CacheManager::getInstance().makeRequest(request);
+}
+
+// ============================================================================
+// getImageInfo — port of Java static method (Java lines 96-141)
+// ============================================================================
+
+void ImgurAPI::getImageInfo(
+        Context &context,
+        const QString &imageId,
+        int priority,
+        GetImageInfoListener &listener) {
+
+    // Port of: final UriString apiUrl = new UriString("https://api.imgur.com/2/image/"
+    //         + imageId + ".json"); (Java lines 102-103)
+    const UriString apiUrl("https://api.imgur.com/2/image/" + imageId + ".json");
+
+    // Port of: CacheManager.getInstance(context).makeRequest(new CacheRequest(...))
+    // (Java lines 105-141)
+
+    // Create the JSON parser listener (anonymous inner class in Java)
+    // Port of: new CacheRequestJSONParser.Listener() { ... } (Java lines 114-141)
+    class ImageParserListener : public CacheRequestJSONParser::Listener {
+    public:
+        ImageParserListener(
+                Context &context,
+                const UriString &apiUrl,
+                GetImageInfoListener &listener)
+            : m_context(context)
+            , m_apiUrl(apiUrl)
+            , m_listener(listener) {}
+
+        // Port of: onJsonParsed (Java lines 116-134)
+        void onJsonParsed(
+                const JsonValue &result,
+                const TimestampUTC &timestamp,
+                const QUuid &session,
+                bool fromCache) override {
+            (void)timestamp;
+            (void)session;
+            (void)fromCache;
+            try {
+                // Port of: final JsonObject outer = result.asObject()
+                //     .getObject("image"); (Java line 123)
+                const JsonObject outer = result.asObject().getObject("image");
+
+                // Port of: listener.onSuccess(ImageInfo.parseImgur(outer));
+                // (Java line 124)
+                m_listener.onSuccess(ImageInfo::parseImgur(outer));
+            } catch (const std::exception &t) {
+                // Port of: catch(final Throwable t) { ... } (Java lines 126-134)
+                RRError error = General::getGeneralErrorForFailure(
+                    General::RequestFailureType::PARSE,
+                    QString::fromStdString(t.what()),
+                    -1,
+                    m_apiUrl);
+                m_listener.onFailure(error);
+            }
+        }
+
+        // Port of: onFailure (Java lines 138-140)
         void onFailure(const RRError &error) override {
             m_listener.onFailure(error);
         }
@@ -240,18 +327,13 @@ void RedgifsAPI::getImageInfo(
         GetImageInfoListener &m_listener;
     };
 
-    RedgifsParserListener parserListener(context, apiUrl, listener);
+    ImageParserListener parserListener(context, apiUrl, listener);
 
+    // Create the JSON parser wrapper
     CacheRequestJSONParser jsonParser(context, parserListener);
     jsonParser.setApiUrl(apiUrl);
 
     // Build CacheRequest
-    // Port of: new CacheRequest(apiUrl, RedditAccountManager.getAnon(), null, priority,
-    //     new DownloadStrategyIfTimestampOutsideBounds(
-    //         TimestampBound.notOlderThan(TimeDuration.minutes(10))),
-    //     Constants.FileType.IMAGE_INFO,
-    //     CacheRequest.DownloadQueueType.IMMEDIATE, context,
-    //     new CacheRequestJSONParser(context, listener))
     const RedditAccount &anonAccount = RedditAccountManager::getAnon();
 
     CacheRequest request(
@@ -259,7 +341,7 @@ void RedgifsAPI::getImageInfo(
         anonAccount,
         std::nullopt,
         priority,
-        DownloadStrategyIfTimestampOutsideBounds::instance(),
+        DownloadStrategyIfNotCached::INSTANCE,
         FileType::IMAGE_INFO,
         CacheRequest::DownloadQueueType::IMMEDIATE,
         jsonParser);
