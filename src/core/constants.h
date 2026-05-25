@@ -1,530 +1,356 @@
 /*
- * PinkReader - Open source Reddit client for Android
- * Copyright (C) 2024-2026 PinkReader Contributors
+ * PinkReader - Open source Reddit client
+ * Copyright (C) 2024-2026 PinkReader Contributors - GPLv3
+ * File: constants.h - Port of RedReader's Constants.java
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Line-by-line translation of:
+ *   redreader/src/main/java/org/quantumbadger/redreader/common/Constants.java
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * File: constants.h
- * Description: Application-wide constants
+ * All constants, inner classes, and static methods ported 1:1.
  */
-
 
 #pragma once
 
 #include <QString>
-#include <QUrl>
-#include <QVersionNumber>
-#include <cstdint>
+#include <QStringList>
+#include <vector>
+#include <set>
+#include <string>
+#include <algorithm>
+#include <cctype>
 
-/**
- * @namespace PinkReader::Constants
- * @brief Application-wide constants used throughout PinkReader
- *
- * Contains all hardcoded values, API configuration, cache parameters,
- * feature flags, and platform-specific constants.
- *
- * Centralizing constants here makes it easy to update values globally
- * and ensures consistency across the codebase.
- */
 namespace PinkReader {
-namespace Constants {
 
-// ---------------------------------------------------------------------------
-// Application Identity
-// ---------------------------------------------------------------------------
-
-/** @brief Application display name */
-constexpr const char *APP_NAME = "PinkReader";
-
-/** @brief Application ID (used for QSettings, Android package, etc.) */
-constexpr const char *APP_ID = "org.pinkreader.app";
-
-/** @brief Application organization name */
-constexpr const char *ORG_NAME = "PinkReader";
-
-/** @brief Application organization domain */
-constexpr const char *ORG_DOMAIN = "pinkreader.org";
-
-/** @brief F-Droid application ID for future F-Droid submission */
-constexpr const char *FDROID_ID = "org.pinkreader.app";
-
-/** @brief GitHub repository URL */
-constexpr const char *GITHUB_REPO = "https://github.com/pinkreader/pinkreader";
-
-/** @brief Website URL */
-constexpr const char *WEBSITE_URL = "https://pinkreader.org";
-
-/** @brief Privacy policy URL */
-constexpr const char *PRIVACY_URL = "https://pinkreader.org/privacy";
-
-/** @brief Bug report URL */
-constexpr const char *BUG_REPORT_URL = "https://github.com/pinkreader/pinkreader/issues";
-
-/** @brief User agent string for HTTP requests */
-constexpr const char *USER_AGENT = "PinkReader/1.0.0 (Android; Qt 6.x)";
-
-// ---------------------------------------------------------------------------
-// Reddit API Configuration
-// ---------------------------------------------------------------------------
-
-/** @brief Reddit OAuth base URL */
-constexpr const char *REDDIT_OAUTH_BASE = "https://oauth.reddit.com";
-
-/** @brief Reddit API base URL */
-constexpr const char *REDDIT_API_BASE = "https://www.reddit.com/api";
-
-/** @brief Reddit OAuth authorization endpoint */
-constexpr const char *REDDIT_AUTH_URL = "https://www.reddit.com/api/v1/authorize";
-
-/** @brief Reddit OAuth token endpoint */
-constexpr const char *REDDIT_TOKEN_URL = "https://www.reddit.com/api/v1/access_token";
-
-/** @brief Reddit OAuth redirect URI (used for app-based auth) */
-constexpr const char *REDDIT_REDIRECT_URI = "pinkreader://oauth/callback";
-
-/** @brief Default Reddit OAuth client ID (can be overridden in settings) */
-constexpr const char *DEFAULT_CLIENT_ID = "pinkreader_android_app";
-
-/** @brief OAuth scopes requested by the app */
-constexpr const char *OAUTH_SCOPES =
-    "identity,read,edit,submit,flair,modconfig,modflair,"
-    "modlog,modposts,modwiki,privatemessages,report,"
-    "save,submit,vote,wikiread,history,subscribe";
-
-/** @brief Maximum number of posts per API request */
-constexpr int MAX_POSTS_PER_REQUEST = 100;
-
-/** @brief Maximum number of comments per API request */
-constexpr int MAX_COMMENTS_PER_REQUEST = 500;
-
-/** @brief Default posts to fetch in a listing */
-constexpr int DEFAULT_LISTING_LIMIT = 25;
-
-/** @brief Maximum number of items in the main feed */
-constexpr int MAX_FEED_ITEMS = 250;
-
-// ---------------------------------------------------------------------------
-// API Rate Limiting
-// ---------------------------------------------------------------------------
-
-/** @brief Minimum interval between API requests (milliseconds) */
-constexpr int API_REQUEST_INTERVAL_MS = 1000;
-
-/** @brief Maximum requests per minute (Reddit's standard rate limit) */
-constexpr int MAX_REQUESTS_PER_MINUTE = 60;
-
-/** @brief Backoff multiplier for rate-limited requests */
-constexpr double RATE_LIMIT_BACKOFF_MULTIPLIER = 2.0;
-
-/** @brief Maximum backoff time (seconds) */
-constexpr int MAX_BACKOFF_SECONDS = 60;
-
-// ---------------------------------------------------------------------------
-// Cache Configuration
-// ---------------------------------------------------------------------------
-
-/** @brief SQLite database filename for cache metadata */
-constexpr const char *CACHE_DB_NAME = "pinkreader_cache.db";
-
-/** @brief SQLite database version */
-constexpr int CACHE_DB_VERSION = 1;
-
-/** @brief Maximum cache size in megabytes */
-constexpr int MAX_CACHE_SIZE_MB = 512;
-
-/** @brief Maximum disk cache age in days */
-constexpr int MAX_CACHE_AGE_DAYS = 30;
-
-/** @brief Default thumbnail cache size */
-constexpr int THUMBNAIL_CACHE_COUNT = 500;
-
-/** @brief Maximum image cache size in megabytes */
-constexpr int MAX_IMAGE_CACHE_MB = 256;
-
-/** @brief Cache compression level (1-22 for zstd, higher = better compression) */
-constexpr int CACHE_COMPRESSION_LEVEL = 15;
-
-// ---------------------------------------------------------------------------
-// Image/Media Settings
-// ---------------------------------------------------------------------------
-
-/** @brief Maximum image dimension for thumbnails */
-constexpr int THUMBNAIL_MAX_DIMENSION = 256;
-
-/** @brief Maximum image dimension for previews */
-constexpr int PREVIEW_MAX_DIMENSION = 800;
-
-/** @brief JPEG quality for cached images (0-100) */
-constexpr int IMAGE_CACHE_JPEG_QUALITY = 85;
-
-/** @brief Maximum GIF file size to download (bytes) */
-constexpr int64_t MAX_GIF_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
-
-/** @brief Maximum video file size for inline playback (bytes) */
-constexpr int64_t MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
-
-// ---------------------------------------------------------------------------
-// UI/Display Constants
-// ---------------------------------------------------------------------------
-
-/** @brief Default font size for body text (points) */
-constexpr int DEFAULT_FONT_SIZE = 14;
-
-/** @brief Minimum font size (points) */
-constexpr int MIN_FONT_SIZE = 8;
-
-/** @brief Maximum font size (points) */
-constexpr int MAX_FONT_SIZE = 24;
-
-/** @brief Font scaling step */
-constexpr double FONT_SCALE_STEP = 0.1;
-
-/** @brief Minimum font scale factor */
-constexpr double MIN_FONT_SCALE = 0.5;
-
-/** @brief Maximum font scale factor */
-constexpr double MAX_FONT_SCALE = 3.0;
-
-/** @brief Default comment indent width (pixels per level) */
-constexpr int COMMENT_INDENT_PX = 12;
-
-/** @brief Maximum comment nesting level to indent */
-constexpr int MAX_COMMENT_DEPTH = 10;
-
-/** @brief Minimum height for comment rows (accessibility) */
-constexpr int MIN_COMMENT_HEIGHT_PX = 48;
-
-/** @brief Default post card thumbnail width */
-constexpr int POST_THUMBNAIL_WIDTH = 72;
-
-/** @brief Default post card thumbnail height */
-constexpr int POST_THUMBNAIL_HEIGHT = 72;
-
-/** @brief Swipe threshold for triggering actions (pixels) */
-constexpr int SWIPE_THRESHOLD_PX = 80;
-
-/** @brief Bezel toolbar swipe zone width (pixels) */
-constexpr int BEZEL_SWIPE_ZONE_WIDTH = 20;
-
-/** @brief Pull-to-refresh trigger distance (pixels) */
-constexpr int PULL_REFRESH_DISTANCE = 100;
-
-/** @brief Pull-to-refresh maximum overshoot (pixels) */
-constexpr int PULL_REFRESH_MAX_OVERSCROLL = 200;
-
-// ---------------------------------------------------------------------------
-// Timer Intervals
-// ---------------------------------------------------------------------------
-
-/** @brief How often to check for new messages (milliseconds) */
-constexpr int INBOX_CHECK_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
-
-/** @brief How often to auto-refresh old post lists (milliseconds) */
-constexpr int AUTO_REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-
-/** @brief Cache pruning interval (milliseconds) */
-constexpr int CACHE_PRUNE_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
-
-/** @brief Draft auto-save interval (milliseconds) */
-constexpr int DRAFT_AUTOSAVE_INTERVAL_MS = 30 * 1000; // 30 seconds
-
-/** @brief Session auto-save interval (milliseconds) */
-constexpr int SESSION_AUTOSAVE_INTERVAL_MS = 60 * 1000; // 1 minute
-
-// ---------------------------------------------------------------------------
-// Intent/Activity Request Codes
-// ---------------------------------------------------------------------------
-
-/** @brief Request code for OAuth login activity */
-constexpr int OAUTH_LOGIN_REQUEST_CODE = 1001;
-
-/** @brief Request code for image picker activity */
-constexpr int IMAGE_PICKER_REQUEST_CODE = 1002;
-
-/** @brief Request code for file picker activity */
-constexpr int FILE_PICKER_REQUEST_CODE = 1003;
-
-/** @brief Request code for settings backup activity */
-constexpr int BACKUP_REQUEST_CODE = 1004;
-
-/** @brief Request code for settings restore activity */
-constexpr int RESTORE_REQUEST_CODE = 1005;
-
-// ---------------------------------------------------------------------------
-// Feature Flags
-// ---------------------------------------------------------------------------
-
-/** @brief Enable experimental features */
-constexpr bool FEATURE_EXPERIMENTAL = false;
-
-/** @brief Enable debugging overlay */
-constexpr bool FEATURE_DEBUG_OVERLAY = false;
-
-/** @brief Enable performance profiling */
-constexpr bool FEATURE_PROFILING = false;
-
-/** @brief Enable anonymous usage statistics */
-constexpr bool FEATURE_ANALYTICS = false;
-
-/** @brief Enable crash reporting */
-constexpr bool FEATURE_CRASH_REPORTING = true;
-
-/** @brief Enable Material You dynamic colors (Android 12+) */
-constexpr bool FEATURE_MATERIAL_YOU = true;
-
-/** @brief Enable Tor/Orbot integration */
-constexpr bool FEATURE_TOR_SUPPORT = true;
-
-/** @brief Enable image precaching */
-constexpr bool FEATURE_IMAGE_PRECACHE = true;
-
-/** @brief Enable video playback in feed */
-constexpr bool FEATURE_INLINE_VIDEO = true;
-
-/** @brief Enable markdown preview in editor */
-constexpr bool FEATURE_MARKDOWN_PREVIEW = true;
-
-/** @brief Enable swipe gestures */
-constexpr bool FEATURE_SWIPE_GESTURES = true;
-
-/** @brief Enable two-pane tablet layout */
-constexpr bool FEATURE_TWO_PANE = true;
-
-// ---------------------------------------------------------------------------
-// File/Path Constants
-// ---------------------------------------------------------------------------
-
-/** @brief Settings filename */
-constexpr const char *SETTINGS_FILE = "preferences.json";
-
-/** @brief Accounts storage filename */
-constexpr const char *ACCOUNTS_FILE = "accounts.json";
-
-/** @brief Drafts storage directory */
-constexpr const char *DRAFTS_DIR = "drafts";
-
-/** @brief Log file name */
-constexpr const char *LOG_FILE = "pinkreader.log";
-
-/** @brief Crash dump directory */
-constexpr const char *CRASH_DUMP_DIR = "crashes";
-
-/** @brief Backup directory */
-constexpr const char *BACKUP_DIR = "backups";
-
-/** @brief Custom themes directory */
-constexpr const char *THEMES_DIR = "themes";
-
-/** @brief Plugins directory */
-constexpr const char *PLUGINS_DIR = "plugins";
-
-// ---------------------------------------------------------------------------
-// Sort Orders
-// ---------------------------------------------------------------------------
-
-/** @brief Available sort orders for posts */
-enum class PostSortOrder {
-    Hot,
-    New,
-    Top,
-    Rising,
-    Controversial,
-    Best,
-    Relevance,
-    Comments
-};
-
-/** @brief Available sort orders for comments */
-enum class CommentSortOrder {
-    Best,
-    Top,
-    New,
-    Controversial,
-    Old,
-    QA
-};
-
-/** @brief Available time ranges for top/controversial */
-enum class TimeRange {
-    Hour,
-    Day,
-    Week,
-    Month,
-    Year,
-    All
-};
-
-/** @brief Convert post sort order to Reddit API string */
-inline QString postSortToString(PostSortOrder order)
-{
-    switch (order) {
-        case PostSortOrder::Hot:          return QStringLiteral("hot");
-        case PostSortOrder::New:          return QStringLiteral("new");
-        case PostSortOrder::Top:          return QStringLiteral("top");
-        case PostSortOrder::Rising:       return QStringLiteral("rising");
-        case PostSortOrder::Controversial: return QStringLiteral("controversial");
-        case PostSortOrder::Best:         return QStringLiteral("best");
-        case PostSortOrder::Relevance:    return QStringLiteral("relevance");
-        case PostSortOrder::Comments:     return QStringLiteral("comments");
+// ============================================================================
+// Forward declarations for types used in Constants
+// ============================================================================
+
+class SubredditCanonicalId;
+
+// ============================================================================
+// Priority — port of Java inner class Constants.Priority (Java lines 244-261)
+// ============================================================================
+
+namespace Priority {
+    constexpr int CAPTCHA                 = -600;
+    constexpr int API_ACTION              = -500;
+    constexpr int API_MULTIREDDIT_LIST    = -200;
+    constexpr int API_SUBREDDIT_LIST      = -100;
+    constexpr int API_SUBREDDIT_SEARCH    = -500;
+    constexpr int API_SUBREDDIT_INVIDIVUAL = -250;
+    constexpr int API_POST_LIST           = -200;
+    constexpr int API_COMMENT_LIST        = -300;
+    constexpr int THUMBNAIL               = 100;
+    constexpr int INLINE_IMAGE_PREVIEW    = 100;
+    constexpr int IMAGE_PRECACHE          = 500;
+    constexpr int COMMENT_PRECACHE        = 500;
+    constexpr int IMAGE_VIEW              = -400;
+    constexpr int API_USER_ABOUT          = -500;
+    constexpr int API_INBOX_LIST          = -500;
+    constexpr int DEV_ANNOUNCEMENTS       = 600;
+}
+
+// ============================================================================
+// FileType — port of Java inner class Constants.FileType (Java lines 263-277)
+// ============================================================================
+
+namespace FileType {
+    constexpr int NOCACHE               = -1;
+    constexpr int SUBREDDIT_LIST        = 100;
+    constexpr int SUBREDDIT_ABOUT       = 101;
+    constexpr int MULTIREDDIT_LIST      = 102;
+    constexpr int POST_LIST             = 110;
+    constexpr int COMMENT_LIST          = 120;
+    constexpr int USER_ABOUT            = 130;
+    constexpr int INBOX_LIST            = 140;
+    constexpr int THUMBNAIL             = 200;
+    constexpr int IMAGE                 = 201;
+    constexpr int CAPTCHA               = 202;
+    constexpr int INLINE_IMAGE_PREVIEW  = 203;
+    constexpr int IMAGE_INFO            = 300;
+}
+
+// ============================================================================
+// Mime — port of Java inner class Constants.Mime (Java lines 42-60)
+// ============================================================================
+
+namespace Mime {
+
+inline bool isImage(const QString &mimetype) {
+    // Java: StringUtils.asciiLowercase(mimetype).startsWith("image/") && !isImageGif(mimetype)
+    const QString lower = mimetype.toLower();
+    return lower.startsWith(QStringLiteral("image/")) && !(mimetype.compare(QStringLiteral("image/gif"), Qt::CaseInsensitive) == 0);
+}
+
+inline bool isImageGif(const QString &mimetype) {
+    return mimetype.compare(QStringLiteral("image/gif"), Qt::CaseInsensitive) == 0;
+}
+
+inline bool isVideo(const QString &mimetype) {
+    return mimetype.startsWith(QStringLiteral("video/"));
+}
+
+inline bool isOctetStream(const QString &mimetype) {
+    return mimetype == QStringLiteral("application/octet-stream");
+}
+
+} // namespace Mime
+
+// ============================================================================
+// Reddit — port of Java inner class Constants.Reddit (Java lines 62-236)
+// ============================================================================
+
+namespace Reddit {
+
+    // ---- URL Constants (Java lines 142-160) ----
+    constexpr const char *SCHEME_HTTPS = "https";
+    constexpr const char *DOMAIN_HTTPS = "oauth.reddit.com";
+    constexpr const char *DOMAIN_HTTPS_HUMAN = "reddit.com";
+    constexpr const char *PATH_VOTE = "/api/vote";
+    constexpr const char *PATH_SAVE = "/api/save";
+    constexpr const char *PATH_HIDE = "/api/hide";
+    constexpr const char *PATH_UNSAVE = "/api/unsave";
+    constexpr const char *PATH_UNHIDE = "/api/unhide";
+    constexpr const char *PATH_REPORT = "/api/report";
+    constexpr const char *PATH_DELETE = "/api/del";
+    constexpr const char *PATH_SUBSCRIBE = "/api/subscribe";
+    constexpr const char *PATH_SUBREDDITS_MINE_SUBSCRIBER = "/subreddits/mine/subscriber.json?limit=100";
+    constexpr const char *PATH_SUBREDDITS_MINE_MODERATOR  = "/subreddits/mine/moderator.json?limit=100";
+    constexpr const char *PATH_SUBREDDITS_POPULAR         = "/subreddits/popular.json";
+    constexpr const char *PATH_MULTIREDDITS_MINE          = "/api/multi/mine.json";
+    constexpr const char *PATH_COMMENTS                  = "/comments/";
+    constexpr const char *PATH_ME                        = "/api/v1/me";
+
+    // ---- DEFAULT_SUBREDDITS (Java lines 68-123) ----
+    // Lazy-initialized; ported as a function returning const ref
+    // Original Java uses CollectionStream to map strings -> SubredditCanonicalId
+    // We port the string list and leave SubredditCanonicalId construction to callers
+    inline const QStringList &getDefaultSubredditStrings() {
+        static const QStringList list = {
+            QStringLiteral("/r/Art"),
+            QStringLiteral("/r/AskReddit"),
+            QStringLiteral("/r/askscience"),
+            QStringLiteral("/r/aww"),
+            QStringLiteral("/r/books"),
+            QStringLiteral("/r/creepy"),
+            QStringLiteral("/r/dataisbeautiful"),
+            QStringLiteral("/r/DIY"),
+            QStringLiteral("/r/Documentaries"),
+            QStringLiteral("/r/EarthPorn"),
+            QStringLiteral("/r/explainlikeimfive"),
+            QStringLiteral("/r/Fitness"),
+            QStringLiteral("/r/food"),
+            QStringLiteral("/r/funny"),
+            QStringLiteral("/r/Futurology"),
+            QStringLiteral("/r/gadgets"),
+            QStringLiteral("/r/gaming"),
+            QStringLiteral("/r/GetMotivated"),
+            QStringLiteral("/r/gifs"),
+            QStringLiteral("/r/history"),
+            QStringLiteral("/r/IAmA"),
+            QStringLiteral("/r/InternetIsBeautiful"),
+            QStringLiteral("/r/Jokes"),
+            QStringLiteral("/r/LifeProTips"),
+            QStringLiteral("/r/listentothis"),
+            QStringLiteral("/r/mildlyinteresting"),
+            QStringLiteral("/r/movies"),
+            QStringLiteral("/r/Music"),
+            QStringLiteral("/r/news"),
+            QStringLiteral("/r/nosleep"),
+            QStringLiteral("/r/nottheonion"),
+            QStringLiteral("/r/oldschoolcool"),
+            QStringLiteral("/r/personalfinance"),
+            QStringLiteral("/r/philosophy"),
+            QStringLiteral("/r/photoshopbattles"),
+            QStringLiteral("/r/pics"),
+            QStringLiteral("/r/reddit"),
+            QStringLiteral("/r/science"),
+            QStringLiteral("/r/Showerthoughts"),
+            QStringLiteral("/r/space"),
+            QStringLiteral("/r/sports"),
+            QStringLiteral("/r/television"),
+            QStringLiteral("/r/tifu"),
+            QStringLiteral("/r/todayilearned"),
+            QStringLiteral("/r/TwoXChromosomes"),
+            QStringLiteral("/r/UpliftingNews"),
+            QStringLiteral("/r/videos"),
+            QStringLiteral("/r/worldnews"),
+            QStringLiteral("/r/writingprompts")
+        };
+        return list;
     }
-    return QStringLiteral("hot");
-}
 
-/** @brief Convert comment sort order to Reddit API string */
-inline QString commentSortToString(CommentSortOrder order)
-{
-    switch (order) {
-        case CommentSortOrder::Best:         return QStringLiteral("confidence");
-        case CommentSortOrder::Top:          return QStringLiteral("top");
-        case CommentSortOrder::New:          return QStringLiteral("new");
-        case CommentSortOrder::Controversial: return QStringLiteral("controversial");
-        case CommentSortOrder::Old:          return QStringLiteral("old");
-        case CommentSortOrder::QA:           return QStringLiteral("qa");
+    // ---- BOT_USERNAMES_LOWERCASE (Java lines 125-139) ----
+    inline const std::set<QString> &getBotUsernamesLowercase() {
+        static const std::set<QString> set = {
+            QStringLiteral("automoderator"),
+            QStringLiteral("qualityvote"),
+            QStringLiteral("visualmod"),
+            QStringLiteral("a-mirror-bot"),
+            QStringLiteral("unexbot"),
+            QStringLiteral("rfauxmoi"),
+            QStringLiteral("ukbot-nicolabot"),
+            QStringLiteral("qualityvote2"),
+            QStringLiteral("trendingtattler"),
+            QStringLiteral("cannabun"),
+            QStringLiteral("pcmrbot"),
+            QStringLiteral("spotlight-app"),
+            QStringLiteral("flairassistant"),
+            QStringLiteral("sponge-tron")
+        };
+        return set;
     }
-    return QStringLiteral("confidence");
-}
 
-/** @brief Convert time range to Reddit API string */
-inline QString timeRangeToString(TimeRange range)
-{
-    switch (range) {
-        case TimeRange::Hour:  return QStringLiteral("hour");
-        case TimeRange::Day:   return QStringLiteral("day");
-        case TimeRange::Week:  return QStringLiteral("week");
-        case TimeRange::Month: return QStringLiteral("month");
-        case TimeRange::Year:  return QStringLiteral("year");
-        case TimeRange::All:   return QStringLiteral("all");
+    // ---- getScheme (Java line 162-164) ----
+    inline QString getScheme() {
+        return QString::fromLatin1(SCHEME_HTTPS);
     }
-    return QStringLiteral("day");
+
+    // ---- getDomain (Java lines 166-168) ----
+    inline QString getDomain() {
+        return QString::fromLatin1(DOMAIN_HTTPS);
+    }
+
+    // ---- getHumanReadableDomain (Java lines 170-172) ----
+    inline QString getHumanReadableDomain() {
+        return QString::fromLatin1(DOMAIN_HTTPS_HUMAN);
+    }
+
+    // ---- getUriBuilder (Java lines 174-176) ----
+    // Returns the URI string; builder pattern replaced with simple string construction
+    inline QString getUriBuilder(const QString &path) {
+        return QString::fromLatin1(SCHEME_HTTPS) + QStringLiteral("://")
+                + QString::fromLatin1(DOMAIN_HTTPS) + path;
+    }
+
+    // ---- getUri (Java lines 178-180) ----
+    inline QString getUri(const QString &path) {
+        return getScheme() + QStringLiteral("://") + getDomain() + path;
+    }
+
+    // ---- getNonAPIUri (Java lines 182-184) ----
+    inline QString getNonAPIUri(const QString &path) {
+        return getScheme() + QStringLiteral("://reddit.com") + path;
+    }
+
+    // ---- isApiErrorUser (Java lines 186-189) ----
+    inline bool isApiErrorUser(const QString &str) {
+        return str == QStringLiteral(".error.USER_REQUIRED")
+                || str.compare(QStringLiteral("please login to do that"), Qt::CaseInsensitive) == 0;
+    }
+
+    // ---- isApiErrorCaptcha (Java lines 191-194) ----
+    inline bool isApiErrorCaptcha(const QString &str) {
+        return str == QStringLiteral(".error.BAD_CAPTCHA.field-captcha")
+                || str.compare(QStringLiteral("care to try these again?"), Qt::CaseInsensitive) == 0;
+    }
+
+    // ---- isApiErrorNotAllowed (Java lines 196-199) ----
+    inline bool isApiErrorNotAllowed(const QString &str) {
+        return str == QStringLiteral(".error.SUBREDDIT_NOTALLOWED.field-sr")
+                || str.compare(QStringLiteral("you aren't allowed to post there."), Qt::CaseInsensitive) == 0;
+    }
+
+    // ---- isApiErrorSubredditRequired (Java lines 201-204) ----
+    inline bool isApiErrorSubredditRequired(const QString &str) {
+        return str == QStringLiteral(".error.SUBREDDIT_REQUIRED.field-sr")
+                || str.compare(QStringLiteral("you must specify a subreddit"), Qt::CaseInsensitive) == 0;
+    }
+
+    // ---- isApiErrorURLRequired (Java lines 206-209) ----
+    inline bool isApiErrorURLRequired(const QString &str) {
+        return str == QStringLiteral(".error.NO_URL.field-url")
+                || str.compare(QStringLiteral("a url is required"), Qt::CaseInsensitive) == 0;
+    }
+
+    // ---- isApiTooFast (Java lines 211-214) ----
+    inline bool isApiTooFast(const QString &str) {
+        return str == QStringLiteral(".error.RATELIMIT.field-ratelimit")
+                || (!str.isNull() && str.contains(QStringLiteral("you are doing that too much"), Qt::CaseInsensitive));
+    }
+
+    // ---- isApiTooLong (Java lines 216-219) ----
+    inline bool isApiTooLong(const QString &str) {
+        return str == QStringLiteral("TOO_LONG")
+                || (!str.isNull() && str.contains(QStringLiteral("this is too long"), Qt::CaseInsensitive));
+    }
+
+    // ---- isApiAlreadySubmitted (Java lines 221-225) ----
+    inline bool isApiAlreadySubmitted(const QString &str) {
+        return str == QStringLiteral(".error.ALREADY_SUB.field-url")
+                || (!str.isNull() && str.contains(QStringLiteral("that link has already been submitted"), Qt::CaseInsensitive));
+    }
+
+    // ---- isPostFlairRequired (Java lines 227-231) ----
+    inline bool isPostFlairRequired(const QString &str) {
+        return str == QStringLiteral(".error.SUBMIT_VALIDATION_FLAIR_REQUIRED.field-flair")
+                || (!str.isNull() && str.contains(QStringLiteral("Your post must contain post flair."), Qt::CaseInsensitive));
+    }
+
+    // ---- isApiError (Java lines 233-235) ----
+    inline bool isApiError(const QString &str) {
+        return !str.isNull() && str.startsWith(QStringLiteral(".error."));
+    }
+
+} // namespace Reddit
+
+// ============================================================================
+// OA_CS / OA_CI — port of Java fields (Java lines 279-280)
+// ============================================================================
+
+constexpr const char *OA_CS = "client_secret";
+constexpr const char *OA_CI = "client_id";
+
+// ============================================================================
+// version(Context) — port of Java static method (Java lines 33-40)
+// In C++ this is just a string constant; the actual app version is set at build time
+// ============================================================================
+
+// This would be defined in CMakeLists.txt or similar build config
+#ifndef PINKREADER_VERSION
+#define PINKREADER_VERSION "1.0.0"
+#endif
+
+inline QString version() {
+    return QStringLiteral(PINKREADER_VERSION);
 }
 
-// ---------------------------------------------------------------------------
-// Subreddit Constants
-// ---------------------------------------------------------------------------
+// ============================================================================
+// ua(Context) — port of Java static method (Java lines 238-242)
+// Builds user-agent string from canonical class name + version
+// ============================================================================
 
-/** @brief Front page pseudo-subreddit identifier */
-constexpr const char *FRONT_PAGE = "";
-
-/** @brief /r/all subreddit identifier */
-constexpr const char *R_ALL = "all";
-
-/** @brief /r/popular subreddit identifier */
-constexpr const char *R_POPULAR = "popular";
-
-/** @brief Default subreddit to show on first launch */
-constexpr const char *DEFAULT_SUBREDDIT = "all";
-
-/** @brief Maximum number of pinned subreddits */
-constexpr int MAX_PINNED_SUBREDDITS = 50;
-
-/** @brief Maximum subreddits in recent list */
-constexpr int MAX_RECENT_SUBREDDITS = 50;
-
-// ---------------------------------------------------------------------------
-// Post/Comment Limits
-// ---------------------------------------------------------------------------
-
-/** @brief Maximum title length for posts */
-constexpr int MAX_POST_TITLE_LENGTH = 300;
-
-/** @brief Maximum body length for text posts */
-constexpr int MAX_POST_BODY_LENGTH = 40000;
-
-/** @brief Maximum comment body length */
-constexpr int MAX_COMMENT_LENGTH = 10000;
-
-/** @brief Maximum characters for private messages */
-constexpr int MAX_PM_LENGTH = 10000;
-
-/** @brief Maximum report reason length */
-constexpr int MAX_REPORT_LENGTH = 100;
-
-// ---------------------------------------------------------------------------
-// Voting
-// ---------------------------------------------------------------------------
-
-/** @brief Vote direction enumeration */
-enum class VoteDirection {
-    None = 0,
-    Upvote = 1,
-    Downvote = -1
-};
-
-/** @brief Convert vote direction to API value */
-inline int voteToApiValue(VoteDirection vote)
-{
-    return static_cast<int>(vote);
+inline QString ua() {
+    return QStringLiteral("org.quantumbadger.redreader/") + version();
 }
 
-// ---------------------------------------------------------------------------
-// Save/Hide States
-// ---------------------------------------------------------------------------
+// ============================================================================
+// PrefsUtility::createFileTypeMap helper — port of Java pattern used in CacheManager
+// Maps file type int -> TimeDuration (or long for usage stats)
+// ============================================================================
 
-/** @brief Content save state */
-enum class SaveState {
-    NotSaved,
-    Saved
-};
+// Forward: TimeDuration is defined in time_duration.h
+class TimeDuration;
 
-/** @brief Content hide state */
-enum class HideState {
-    Visible,
-    Hidden
-};
+namespace PrefsUtility {
 
-/** @brief Content read state */
-enum class ReadState {
-    Unread,
-    Read
-};
+// createFileTypeMap(Listing, Thumbnail, Image) → map<int, TimeDuration>
+// Java signature (from CacheManager usage):
+//   PrefsUtility.createFileTypeMap(TimeDuration, TimeDuration, TimeDuration)
+// This is declared here and defined in prefs_utility.h/cpp
+std::map<int, TimeDuration> createFileTypeMap(
+        const TimeDuration &listing,
+        const TimeDuration &thumbnail,
+        const TimeDuration &image);
 
-// ---------------------------------------------------------------------------
-// Login/Account Constants
-// ---------------------------------------------------------------------------
+// createFileTypeMap(Long, Long, Long) → map<int, Long>
+// Java signature (from CacheManager.getCacheDataUsages):
+//   PrefsUtility.createFileTypeMap(0L, 0L, 0L)
+std::map<int, qint64> createFileTypeMap(
+        qint64 listing,
+        qint64 thumbnail,
+        qint64 image);
 
-/** @brief Maximum number of accounts */
-constexpr int MAX_ACCOUNTS = 10;
+} // namespace PrefsUtility
 
-/** @brief Minimum username length */
-constexpr int MIN_USERNAME_LENGTH = 3;
-
-/** @brief Maximum username length */
-constexpr int MAX_USERNAME_LENGTH = 20;
-
-/** @brief OAuth token refresh threshold (seconds before expiry) */
-constexpr int TOKEN_REFRESH_THRESHOLD_SECS = 300; // 5 minutes
-
-/** @brief OAuth state length for CSRF protection */
-constexpr int OAUTH_STATE_LENGTH = 32;
-
-// ---------------------------------------------------------------------------
-// NSFW/Content Filtering
-// ---------------------------------------------------------------------------
-
-/** @brief NSFW content preference */
-enum class NsfwPreference {
-    Hide,
-    Show,
-    BlurThumbnail
-};
-
-/** @brief Spoiler content preference */
-enum class SpoilerPreference {
-    HideText,
-    ShowText,
-    BlurThumbnail
-};
-
-} // namespace Constants
 } // namespace PinkReader

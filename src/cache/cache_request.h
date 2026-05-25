@@ -1,84 +1,221 @@
 /*
- * PinkReader - Open source Reddit client for Android
- * Copyright (C) 2024-2026 PinkReader Contributors
- * GPLv3 License
- * File: cache_request.h - Cache request with callbacks
+ * PinkReader - Open source Reddit client
+ * Copyright (C) 2024-2026 PinkReader Contributors - GPLv3
+ * File: cache_request.h - Port of RedReader's CacheRequest.java
+ *
+ * Line-by-line translation of:
+ *   redreader/src/main/java/org/quantumbadger/redreader/cache/CacheRequest.java
  */
 
 #pragma once
 
 #include <QObject>
 #include <QString>
-#include <QByteArray>
-#include <QDateTime>
-#include <QSqlDatabase>
-#include <QDir>
-#include <QMutex>
-#include <QQueue>
-#include <QThread>
+#include <QUuid>
 #include <functional>
 #include <memory>
+#include <optional>
 
 namespace PinkReader {
 
-class CacheRequest : public QObject
-{
-    Q_OBJECT
+class RedditAccount;
+class Priority;
+class DownloadStrategy;
+class HTTPRequestBody;
+class CacheDownload;
+class CacheManager;
+class RRError;
 
+// Forward: SeekableInputStream factory
+template<typename T>
+class GenericFactory;
+
+// Forward: TimestampUTC
+class TimestampUTC;
+
+// ============================================================================
+// CacheRequestCallbacks — port of CacheRequestCallbacks.java
+// ============================================================================
+
+class CacheRequestCallbacks {
 public:
-    explicit CacheRequest(QObject *parent = nullptr);
-    ~CacheRequest() override;
+    virtual ~CacheRequestCallbacks() = default;
 
-    bool initialize(const QString &basePath);
-    bool isInitialized() const;
+    virtual void onDownloadNecessary() {}
+    virtual void onDownloadStarted() {}
 
-    // Cache operations
-    bool put(const QString &key, const QByteArray &data, const QString &mimeType = QString());
-    QByteArray get(const QString &key) const;
-    bool remove(const QString &key);
-    bool contains(const QString &key) const;
-    void clear();
+    virtual void onDataStreamAvailable(
+            const GenericFactory<QByteArray> &streamFactory,
+            const TimestampUTC &timestamp,
+            const QUuid &session,
+            bool fromCache,
+            const std::optional<QString> &mimetype) {}
 
-    // Size management
-    qint64 totalSize() const;
-    qint64 entryCount() const;
-    void setMaxSize(qint64 maxSizeBytes);
-    qint64 maxSize() const;
+    virtual void onDataStreamComplete(
+            const GenericFactory<QByteArray> &streamFactory,
+            const TimestampUTC &timestamp,
+            const QUuid &session,
+            bool fromCache,
+            const std::optional<QString> &mimetype) {}
 
-    // Lifecycle
-    void prune();
-    void flush();
-    void close();
+    virtual void onProgress(
+            bool authorizationInProgress,
+            qint64 bytesRead,
+            qint64 totalBytes) {}
 
-signals:
-    void cacheInitialized();
-    void cacheError(const QString &error);
-    void entryAdded(const QString &key);
-    void entryRemoved(const QString &key);
-    void cacheCleared();
-    void pruneCompleted(int entriesRemoved, qint64 bytesFreed);
-    void sizeWarning(qint64 currentSize, qint64 maxSize);
+    virtual void onFailure(const RRError &error) = 0;
 
-private:
-    QString m_basePath;
-    bool m_initialized = false;
-    qint64 m_maxSize = 512 * 1024 * 1024;  // 512 MB default
-    QMutex m_mutex;
+    virtual void onCacheFileWritten(
+            const CacheManager::ReadableCacheFile &cacheFile,
+            const TimestampUTC &timestamp,
+            const QUuid &session,
+            bool fromCache,
+            const std::optional<QString> &mimetype) {}
+};
 
-    struct CacheEntry {
-        QString key;
-        QString filePath;
-        qint64 size = 0;
-        QDateTime createdAt;
-        QDateTime lastAccessed;
-        QString mimeType;
-        int accessCount = 0;
+// ============================================================================
+// CacheRequest — port of CacheRequest.java
+// ============================================================================
+
+class CacheRequest {
+public:
+    // ---- DownloadQueueType enum (Java line 44-50) ----
+    enum class DownloadQueueType {
+        REDDIT_API,
+        IMGUR_API,
+        IMMEDIATE,
+        IMAGE_PRECACHE,
+        REDGIFS_API_V2
     };
 
-    QVector<CacheEntry> loadIndex();
-    void saveIndex(const QVector<CacheEntry> &entries);
-    QString entryPath(const QString &key) const;
-    void removeEntryFiles(const CacheEntry &entry);
+    // ---- RequestFailureType enum (Java line 52-65) ----
+    enum class RequestFailureType {
+        CONNECTION,
+        REQUEST,
+        STORAGE,
+        CACHE_MISS,
+        CANCELLED,
+        MALFORMED_URL,
+        PARSE,
+        DISK_SPACE,
+        REDDIT_REDIRECT,
+        PARSE_IMGUR,
+        UPLOAD_FAIL_IMGUR,
+        CACHE_DIR_DOES_NOT_EXIST
+    };
+
+    // ---- Fields (Java lines 67-87) ----
+    const QString url;
+    const RedditAccount &user;
+    const std::optional<QUuid> requestSession;
+    const Priority &priority;
+    const DownloadStrategy &downloadStrategy;
+    const int fileType;
+    const DownloadQueueType queueType;
+    const std::optional<HTTPRequestBody> requestBody;
+    const bool cache;
+    // context is omitted in C++ port (Android-specific)
+
+    // ---- Constructor 1: 7-arg with cache=true (Java lines 109-133) ----
+    CacheRequest(
+            const QString &url,
+            const RedditAccount &user,
+            const std::optional<QUuid> &requestSession,
+            const Priority &priority,
+            const DownloadStrategy &downloadStrategy,
+            int fileType,
+            DownloadQueueType queueType,
+            const CacheRequestCallbacks &callbacks);
+
+    // ---- Constructor 2: 7-arg without requestBody, cache default (Java lines 135-157) ----
+    CacheRequest(
+            const QString &url,
+            const RedditAccount &user,
+            const std::optional<QUuid> &requestSession,
+            const Priority &priority,
+            const DownloadStrategy &downloadStrategy,
+            int fileType,
+            DownloadQueueType queueType,
+            bool cache,
+            const CacheRequestCallbacks &callbacks);
+
+    // ---- Constructor 3: 8-arg with requestBody, cache=false (Java lines 159-183) ----
+    CacheRequest(
+            const QString &url,
+            const RedditAccount &user,
+            const std::optional<QUuid> &requestSession,
+            const Priority &priority,
+            const DownloadStrategy &downloadStrategy,
+            int fileType,
+            DownloadQueueType queueType,
+            const std::optional<HTTPRequestBody> &requestBody,
+            const CacheRequestCallbacks &callbacks);
+
+    // ---- Master constructor (Java lines 186-232) ----
+    CacheRequest(
+            const QString &url,
+            const RedditAccount &user,
+            const std::optional<QUuid> &requestSession,
+            const Priority &priority,
+            const DownloadStrategy &downloadStrategy,
+            int fileType,
+            DownloadQueueType queueType,
+            const std::optional<HTTPRequestBody> &requestBody,
+            bool cache,
+            const CacheRequestCallbacks &callbacks);
+
+    ~CacheRequest();
+
+    // ---- Queue helpers ----
+    int compareTo(const CacheRequest &another) const;
+
+    // ---- Called by CacheDownload (Java line 90-96) ----
+    bool setDownload(CacheDownload *download);
+
+    // ---- Cancel (Java lines 99-107) ----
+    void cancel();
+
+    // ---- Callbacks (Java lines 245-336) ----
+    void notifyDataStreamAvailable(
+            const GenericFactory<QByteArray> &streamFactory,
+            const TimestampUTC &timestamp,
+            const QUuid &session,
+            bool fromCache,
+            const std::optional<QString> &mimetype);
+
+    void notifyDataStreamComplete(
+            const GenericFactory<QByteArray> &streamFactory,
+            const TimestampUTC &timestamp,
+            const QUuid &session,
+            bool fromCache,
+            const std::optional<QString> &mimetype);
+
+    void notifyFailure(const RRError &error);
+
+    void notifyProgress(
+            bool authorizationInProgress,
+            qint64 bytesRead,
+            qint64 totalBytes);
+
+    void notifyCacheFileWritten(
+            const CacheManager::ReadableCacheFile &cacheFile,
+            const TimestampUTC &timestamp,
+            const QUuid &session,
+            bool fromCache,
+            const QString &mimetype);
+
+    void notifyDownloadNecessary();
+    void notifyDownloadStarted();
+
+private:
+    CacheDownload *m_download = nullptr;
+    bool m_cancelled = false;
+    const CacheRequestCallbacks &m_callbacks;
+
+    void onCallbackException(const std::exception &t);
 };
+
+// ---- Comparison operators ----
+bool operator<(const CacheRequest &a, const CacheRequest &b);
 
 } // namespace PinkReader
