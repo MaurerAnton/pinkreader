@@ -54,11 +54,11 @@ class PinkReader : AppCompatActivity() {
     private external fun nativeClearCache()
 
     // ── Safe JNI wrappers ────────────────────────────────────────────
-    private fun safeJniCall(block: () -> String, fallback: String = ""): String =
-        if (nativeLoaded) try { block() } catch(e: Exception) { Log.w(TAG,"JNI call failed",e); fallback } else fallback
+    private fun safeJniCall(block: () -> String): String =
+        if (nativeLoaded) try { block() } catch(e: Exception) { Log.w(TAG,"JNI call failed",e); "" } else ""
     private fun safeJniVoid(block: () -> Unit) { if (nativeLoaded) try { block() } catch(e: Exception) { Log.w(TAG,"JNI void failed",e) } }
-    private fun safeJniBool(block: () -> Boolean, fallback: Boolean = false): Boolean =
-        if (nativeLoaded) try { block() } catch(e: Exception) { fallback } else fallback
+    private fun safeJniBool(block: () -> Boolean): Boolean =
+        if (nativeLoaded) try { block() } catch(e: Exception) { false } else false
 
     // ── State (thread-safe) ──────────────────────────────────────────
     private var currentSub = "popular"
@@ -100,8 +100,8 @@ class PinkReader : AppCompatActivity() {
         try {
             if (nativeLoaded) {
                 safeJniVoid { nativeInit(cacheDir.absolutePath) }
-                Theme.isDark = safeJniBool({ nativeGetDarkTheme() }, true)
-                accessToken = safeJniCall({ nativeGetToken() })
+                Theme.isDark = safeJniBool{ nativeGetDarkTheme() }
+                accessToken = safeJniCall{ nativeGetToken() }
             } else {
                 Theme.isDark = true
                 accessToken = ""
@@ -427,7 +427,7 @@ class PinkReader : AppCompatActivity() {
         errorText.visibility=View.VISIBLE; errorText.text="Running tests..."
         thread{
             val sb=StringBuilder("=== PinkReader Tests ===\n\n")
-            try{ sb.append("Native: ${if(safeJniBool({ nativeRunTests() }))"✓" else "✗"}\n") }
+            try{ sb.append("Native: ${if(safeJniBool{ nativeRunTests() })"✓" else "✗"}\n") }
             catch(e:Exception){ sb.append("Native: ✗ ${e.message}\n") }
             try{
                 val url=safeJniCall{ nativeBuildPostsUrl("popular","hot","",3) }
