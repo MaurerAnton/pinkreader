@@ -119,12 +119,13 @@ public:
         TITLE_COMMENTS
     };
 
-    // ---- ImageViewMode (Java lines 893-898) ----
+    // ---- ImageViewMode (Java lines 893-903) ----
     enum class ImageViewMode {
         INTERNAL_OPENGL,
         INTERNAL_BROWSER,
         EXTERNAL_BROWSER
     };
+    static bool imageViewMode_downloadInApp(ImageViewMode mode);
 
     // ---- PostSort enum ----
     enum class PostSort {
@@ -141,7 +142,7 @@ public:
         BEST
     };
 
-    // ---- PostCommentSort enum ----
+    // ---- PostCommentSort enum (Java line 1122) ----
     enum class PostCommentSort {
         BEST,
         HOT,
@@ -152,12 +153,109 @@ public:
         QA
     };
 
-    // ---- UserCommentSort enum ----
+    // ---- UserCommentSort enum (Java line 1128) ----
     enum class UserCommentSort {
         NEW,
         HOT,
         TOP,
         CONTROVERSIAL
+    };
+
+    // ---- ImageViewMode (Java lines 893-903) ----
+    enum class ImageViewMode {
+        INTERNAL_OPENGL,
+        INTERNAL_BROWSER,
+        EXTERNAL_BROWSER
+    };
+
+    // ---- AlbumViewMode (Java lines 913-917) ----
+    enum class AlbumViewMode {
+        INTERNAL_LIST,
+        INTERNAL_BROWSER,
+        EXTERNAL_BROWSER
+    };
+
+    // ---- GifViewMode (Java lines 928-939) ----
+    enum class GifViewMode {
+        INTERNAL_MOVIE,
+        INTERNAL_LEGACY,
+        INTERNAL_BROWSER,
+        EXTERNAL_BROWSER
+    };
+    static bool gifViewMode_downloadInApp(GifViewMode mode);
+
+    // ---- VideoViewMode (Java lines 950-961) ----
+    enum class VideoViewMode {
+        INTERNAL_VIDEOVIEW,
+        INTERNAL_BROWSER,
+        EXTERNAL_BROWSER,
+        EXTERNAL_APP_VLC
+    };
+    static bool videoViewMode_downloadInApp(VideoViewMode mode);
+
+    // ---- PostFlingAction (Java lines 972-993) ----
+    enum class PostFlingAction {
+        UPVOTE, DOWNVOTE, SAVE, HIDE, COMMENTS, LINK,
+        ACTION_MENU, BROWSER, BACK, REPORT, SAVE_IMAGE,
+        GOTO_SUBREDDIT, SHARE, SHARE_COMMENTS, SHARE_IMAGE,
+        COPY, USER_PROFILE, PROPERTIES, MARK_READ, DISABLED
+    };
+
+    // ---- SelfpostAction (Java lines 1009-1011) ----
+    enum class SelfpostAction {
+        COLLAPSE, NOTHING
+    };
+
+    // ---- CommentFlingAction (Java lines 1022-1040) ----
+    enum class CommentFlingAction {
+        UPVOTE, DOWNVOTE, SAVE, REPORT, REPLY, CONTEXT,
+        GO_TO_COMMENT, COMMENT_LINKS, SHARE, COPY_TEXT, COPY_URL,
+        USER_PROFILE, COLLAPSE, ACTION_MENU, PROPERTIES, BACK, DISABLED
+    };
+
+    // ---- CommentAction (Java lines 1054-1056) ----
+    enum class CommentAction {
+        COLLAPSE, ACTION_MENU, NOTHING
+    };
+
+    // ---- PinnedSubredditSort (Java lines 1134-1136) ----
+    enum class PinnedSubredditSort {
+        NAME, DATE
+    };
+
+    // ---- BlockedSubredditSort (Java lines 1144-1146) ----
+    enum class BlockedSubredditSort {
+        NAME, DATE
+    };
+
+    // ---- SharingDomain (Java lines 1174-1185) ----
+    enum class SharingDomain {
+        STANDARD_REDDIT,
+        SHORT_REDDIT,
+        OLD_REDDIT,
+        NEW_REDDIT,
+        NP_REDDIT
+    };
+    static QString sharingDomain_domain(SharingDomain domain);
+
+    // ---- PostCount (Java lines 1198-1200) ----
+    enum class PostCount {
+        R25, R50, R100, ALL
+    };
+
+    // ---- ScreenOrientation (Java lines 1208-1210) ----
+    enum class ScreenOrientation {
+        AUTO, PORTRAIT, LANDSCAPE
+    };
+
+    // ---- SaveLocation (Java lines 1218-1220) ----
+    enum class SaveLocation {
+        PROMPT_EVERY_TIME, SYSTEM_DEFAULT
+    };
+
+    // ---- BehaviourCollapseStickyComments (Java lines 1765-1767) ----
+    enum class BehaviourCollapseStickyComments {
+        ALWAYS, ONLY_BOTS, NEVER
     };
 
     // ========================================================================
