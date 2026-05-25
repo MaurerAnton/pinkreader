@@ -8,10 +8,19 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 
 class PinkReaderSettings : AppCompatActivity() {
-    companion object { init { System.loadLibrary("pinkreader_native") } }
+    companion object {
+        val nativeLoaded: Boolean = run {
+            try { System.loadLibrary("pinkreader_native"); true }
+            catch(e: UnsatisfiedLinkError) { android.util.Log.e("PinkReader","Settings: Failed to load native lib",e); false }
+        }
+    }
     private external fun nativeGetDarkTheme(): Boolean
     private external fun nativeSetDarkTheme(d: Boolean)
     private external fun nativeClearCache()
+
+    private fun safeJniBool(block: () -> Boolean, fallback: Boolean = true): Boolean =
+        if (nativeLoaded) try { block() } catch(e: Exception) { fallback } else fallback
+    private fun safeJniVoid(block: () -> Unit) { if (nativeLoaded) try { block() } catch(e: Exception) {} }
 
     private var isDark = true
     private fun bg() = if(isDark) 0xFF1A1A1A.toInt() else 0xFFF5F5F5.toInt()
@@ -23,7 +32,7 @@ class PinkReaderSettings : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        isDark = nativeGetDarkTheme()
+        isDark = safeJniBool({ nativeGetDarkTheme() }, true)
         window.statusBarColor = if(isDark) 0xFF0D0D0D.toInt() else 0xFFE0E0E0.toInt()
 
         val scroll = ScrollView(this)
@@ -58,7 +67,7 @@ class PinkReaderSettings : AppCompatActivity() {
         }
 
         header("APPEARANCE")
-        item("Theme", "Dark / Light mode", true, isDark) { d -> isDark = d; nativeSetDarkTheme(d); recreate() }
+        item("Theme", "Dark / Light mode", true, isDark) { d -> isDark = d; safeJniVoid { nativeSetDarkTheme(d) }; recreate() }
         item("Font scale", "Adjust text size (coming soon)", false)
 
         header("CONTENT")
@@ -74,7 +83,7 @@ class PinkReaderSettings : AppCompatActivity() {
         item("Back button behaviour", "Double-tap to exit", true, false)
 
         header("CACHE")
-        item("Clear cache", "Free up storage space", false) { nativeClearCache(); Toast.makeText(this, "Cache cleared", Toast.LENGTH_SHORT).show() }
+        item("Clear cache", "Free up storage space", false) { safeJniVoid { nativeClearCache() }; Toast.makeText(this, "Cache cleared", Toast.LENGTH_SHORT).show() }
 
         header("ABOUT")
         item("PinkReader v2.0", "C++20 native engine + Kotlin UI\nOpen source Reddit client for Android\nGPLv3 License · F-Droid available", false)

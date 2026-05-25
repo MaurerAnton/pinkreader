@@ -42,9 +42,9 @@ struct JParser {
     JVal pstr(){JVal v;v.type=JSTR;p++;
         while(p<e&&*p!='"'){if(*p=='\\'){p++;if(p<e){switch(*p){case'n':v.s+='\n';break;case't':v.s+='\t';break;
             case'r':v.s+='\r';break;case'"':v.s+='"';break;case'\\':v.s+='\\';break;case'/':v.s+='/';break;
-            case'u':{char h[5]={p[1],p[2],p[3],p[4],0};unsigned cp=strtoul(h,0,16);p+=4;
+            case'u':{if(e-p<5)break;char h[5]={p[1],p[2],p[3],p[4],0};unsigned cp=strtoul(h,0,16);p+=4;
                 if(cp<0x80)v.s+=(char)cp;else if(cp<0x800){v.s+=(char)(0xC0|cp>>6);v.s+=(char)(0x80|(cp&0x3F));}
-                else{v.s+=(char)(0xE0|cp>>12);v.s+=(char)(0x80|(cp>>6&0x3F));v.s+=(char)(0x80|(cp&0x3F));}}}}}
+                else if(cp<=0xFFFF){v.s+=(char)(0xE0|cp>>12);v.s+=(char)(0x80|(cp>>6&0x3F));v.s+=(char)(0x80|(cp&0x3F));}}}}}
             else v.s+=*p;p++;}if(p<e)p++;return v;}
     JVal parr(){JVal v;v.type=JARR;p++;ws();if(p<e&&*p==']'){p++;return v;}
         while(1){v.arr.push_back(parse());ws();if(p<e&&*p==','){p++;continue;}if(p<e&&*p==']'){p++;break;}break;}return v;}
@@ -92,22 +92,54 @@ public:
 // ============================================================================
 // Serialization
 // ============================================================================
-static std::string esc(const std::string &s){std::string r;for(char c:s){if(c=='"'||c=='\\')r+='\\';r+=c;}return r;}
-static std::string jstr(const std::string &s){return "\""+esc(s)+"\"";}
+static std::string esc(const std::string &s){std::string r;r.reserve(s.size()+32);for(char c:s){if(c=='\"'||c=='\\\\')r+='\\\\';r+=c;}return r;}
+static std::string jstr(const std::string &s){if(s.size()>32000)return "\"<string too long>\"";return "\""+esc(s)+"\"";}
 
 static std::string postToJson(const Post &p,bool full=false){
-    char b[32768];snprintf(b,sizeof(b),
-        "{\"id\":%s,\"name\":%s,\"title\":%s,\"author\":%s,\"subreddit\":%s,\"score\":%d,\"num_comments\":%d,\"created\":%.0f,\"url\":%s,\"thumbnail\":%s,\"domain\":%s,\"is_self\":%s,\"over18\":%s,\"spoiler\":%s,\"stickied\":%s,\"flair\":%s,\"selftext\":%s,\"permalink\":%s,\"likes\":%d,\"saved\":%s,\"hidden\":%s,\"locked\":%s,\"archived\":%s,\"gilded\":%d,\"distinguished\":%s,\"post_hint\":%s}",
-        jstr(p.id).c_str(),jstr(p.name).c_str(),jstr(p.title).c_str(),jstr(p.author).c_str(),jstr(p.subreddit).c_str(),p.score,p.numComments,p.created,jstr(p.url).c_str(),jstr(p.thumbnail).c_str(),jstr(p.domain).c_str(),p.isSelf?"true":"false",p.over18?"true":"false",p.spoiler?"true":"false",p.stickied?"true":"false",jstr(p.linkFlairText).c_str(),full?jstr(p.selftext).c_str():"\"\"",jstr(p.permalink).c_str(),p.likes,p.saved?"true":"false",p.hidden?"true":"false",p.locked?"true":"false",p.archived?"true":"false",p.gilded,jstr(p.distinguished).c_str(),jstr(p.postHint).c_str());
-    return std::string(b);}
+    std::string r="{\"id\":"+jstr(p.id)+",\"name\":"+jstr(p.name)+
+        ",\"title\":"+jstr(p.title)+",\"author\":"+jstr(p.author)+
+        ",\"subreddit\":"+jstr(p.subreddit)+",\"score\":"+std::to_string(p.score)+
+        ",\"num_comments\":"+std::to_string(p.numComments)+
+        ",\"created\":"+std::to_string((int64_t)p.created)+
+        ",\"url\":"+jstr(p.url)+",\"thumbnail\":"+jstr(p.thumbnail)+
+        ",\"domain\":"+jstr(p.domain)+",\"is_self\":"+(p.isSelf?"true":"false")+
+        ",\"over18\":"+(p.over18?"true":"false")+
+        ",\"spoiler\":"+(p.spoiler?"true":"false")+
+        ",\"stickied\":"+(p.stickied?"true":"false")+
+        ",\"flair\":"+jstr(p.linkFlairText)+
+        ",\"selftext\":"+(full?jstr(p.selftext):"\"\"")+
+        ",\"permalink\":"+jstr(p.permalink)+
+        ",\"likes\":"+std::to_string(p.likes)+
+        ",\"saved\":"+(p.saved?"true":"false")+
+        ",\"hidden\":"+(p.hidden?"true":"false")+
+        ",\"locked\":"+(p.locked?"true":"false")+
+        ",\"archived\":"+(p.archived?"true":"false")+
+        ",\"gilded\":"+std::to_string(p.gilded)+
+        ",\"distinguished\":"+jstr(p.distinguished)+
+        ",\"post_hint\":"+jstr(p.postHint)+
+        ",\"upvote_ratio\":"+std::to_string(p.upvoteRatio)+"}";
+    return r;}
 
-static std::string commentToJson(const Comment &c){
-    std::string replies="[";for(size_t i=0;i<c.replies.size();i++){if(i>0)replies+=",";replies+=commentToJson(c.replies[i]);}replies+="]";
-    char b[16384];snprintf(b,sizeof(b),"{\"id\":%s,\"author\":%s,\"body\":%s,\"score\":%d,\"created\":%.0f,\"depth\":%d,\"stickied\":%s,\"flair\":%s,\"distinguished\":%s,\"is_submitter\":%s,\"likes\":%d,\"gilded\":%d,\"collapsed\":%s,\"replies\":%s}",jstr(c.id).c_str(),jstr(c.author).c_str(),jstr(c.body).c_str(),c.score,c.created,c.depth,c.stickied?"true":"false",jstr(c.authorFlairText).c_str(),jstr(c.distinguished).c_str(),c.isSubmitter?"true":"false",c.likes,c.gilded,c.collapsed?"true":"false",replies.c_str());
-    return std::string(b);}
+static std::string commentToJson(const Comment &c,int depth=0){
+    if(depth>200)return "{}";  // Fix: recursion depth cap
+    std::string replies="[";for(size_t i=0;i<c.replies.size();i++){if(i>0)replies+=",";replies+=commentToJson(c.replies[i],depth+1);}replies+="]";
+    return "{\"id\":"+jstr(c.id)+",\"author\":"+jstr(c.author)+",\"body\":"+jstr(c.body)+
+        ",\"score\":"+std::to_string(c.score)+",\"created\":"+std::to_string((int64_t)c.created)+
+        ",\"depth\":"+std::to_string(c.depth)+",\"stickied\":"+(c.stickied?"true":"false")+
+        ",\"flair\":"+jstr(c.authorFlairText)+",\"distinguished\":"+jstr(c.distinguished)+
+        ",\"is_submitter\":"+(c.isSubmitter?"true":"false")+",\"likes\":"+std::to_string(c.likes)+
+        ",\"gilded\":"+std::to_string(c.gilded)+",\"collapsed\":"+(c.collapsed?"true":"false")+
+        ",\"replies\":"+replies+"}";}
 
-static std::string msgToJson(const Message &m){char b[8192];snprintf(b,sizeof(b),"{\"id\":%s,\"author\":%s,\"subject\":%s,\"body\":%s,\"created\":%.0f,\"is_new\":%s,\"subreddit\":%s}",jstr(m.id).c_str(),jstr(m.author).c_str(),jstr(m.subject).c_str(),jstr(m.body).c_str(),m.created,m.isNew?"true":"false",jstr(m.subreddit).c_str());return std::string(b);}
-static std::string subToJson(const Subreddit &s){char b[4096];snprintf(b,sizeof(b),"{\"name\":%s,\"title\":%s,\"subscribers\":%d,\"over18\":%s,\"icon\":%s,\"desc\":%s}",jstr(s.name).c_str(),jstr(s.title).c_str(),s.subscribers,s.over18?"true":"false",jstr(s.iconImg).c_str(),jstr(s.desc).c_str());return std::string(b);}
+static std::string msgToJson(const Message &m){
+    return "{\"id\":"+jstr(m.id)+",\"author\":"+jstr(m.author)+",\"subject\":"+jstr(m.subject)+
+        ",\"body\":"+jstr(m.body)+",\"created\":"+std::to_string((int64_t)m.created)+
+        ",\"is_new\":"+(m.isNew?"true":"false")+",\"subreddit\":"+jstr(m.subreddit)+"}";}
+static std::string subToJson(const Subreddit &s){
+    return "{\"name\":"+jstr(s.name)+",\"title\":"+jstr(s.title)+
+        ",\"subscribers\":"+std::to_string(s.subscribers)+
+        ",\"over18\":"+(s.over18?"true":"false")+
+        ",\"icon\":"+jstr(s.iconImg)+",\"desc\":"+jstr(s.desc)+"}";}
 
 // Helper
 static std::string js(JNIEnv *e,jstring s){if(!s)return"";const char *c=e->GetStringUTFChars(s,0);std::string r(c);e->ReleaseStringUTFChars(s,c);return r;}
@@ -153,7 +185,8 @@ static Subreddit parseSubredditInfo(const std::string &json){return Subreddit::f
 // ============================================================================
 JNIEXPORT jstring JNICALL Java_org_pinkreader_app_PinkReader_nativeBuildPostsUrl(JNIEnv *e,jobject,jstring sub,jstring sort,jstring after,jint limit){
     std::string s=js(e,sub); if(s=="frontpage"||s=="")s="";
-    std::string path=s.empty()?"/"+js(e,sort)+".json":"/r/"+s+"/"+js(e,sort)+".json";
+    std::string so=js(e,sort); if(so.empty())so="hot";  // Fix: null/empty sort guard
+    std::string path=s.empty()?"/"+so+".json":"/r/"+s+"/"+so+".json";
     std::string q="?limit="+std::to_string(limit)+"&raw_json=1"; std::string af=js(e,after);
     if(!af.empty()&&af!="null")q+="&after="+af;
     return tj(e,"https://oauth.reddit.com"+path+q);}
