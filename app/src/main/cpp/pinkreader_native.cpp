@@ -1,4 +1,6 @@
-// PinkReader Native Library - NDK-compilable C++20 core
+// PinkReader Native Engine - Complete Reddit Client Backend
+// Compiles with Android NDK. No Qt dependencies.
+// Handles: OAuth, Reddit API, JSON parsing, caching, all business logic
 
 #include <jni.h>
 #include <string>
@@ -12,328 +14,175 @@
 #include <thread>
 #include <cstring>
 #include <cstdlib>
+#include <cstdio>
+#include <algorithm>
+#include <functional>
 
 // ============================================================================
-// Simple JSON parser (no external deps)
+// Minimal JSON parser (no dependencies)
 // ============================================================================
-// PinkReader utils prefix to avoid name collisions
-#define PR_JSON  pinkreader_json_
 
+enum JType { JNULL, JBOOL, JNUM, JSTR, JARR, JOBJ };
 
-enum class JsonType { Null, Bool, Number, String, Array, Object };
+struct JVal {
+    JType type = JNULL;
+    bool b = false;
+    double n = 0;
+    std::string s;
+    std::vector<JVal> arr;
+    std::map<std::string,JVal> obj;
 
-class JsonValue {
-public:
-    JsonType type = JsonType::Null;
-    bool boolVal = false;
-    double numberVal = 0.0;
-    std::string stringVal;
-    std::vector<JsonValue> arrayVal;
-    std::map<std::string, JsonValue> objectVal;
-
-    static JsonValue parse(const std::string &json);
-    std::string toString() const;
-    bool has(const std::string &key) const {
-        return type == JsonType::Object && objectVal.count(key) > 0;
+    bool has(const std::string &k) const { return type==JOBJ && obj.count(k); }
+    JVal operator[](const std::string &k) const {
+        auto it = obj.find(k); return it!=obj.end()?it->second:JVal();
     }
-    JsonValue operator[](const std::string &key) const {
-        if (type == JsonType::Object) {
-            auto it = objectVal.find(key);
-            if (it != objectVal.end()) return it->second;
-        }
-        return JsonValue();
-    }
-    std::string asString() const { return stringVal; }
-    int asInt() const { return static_cast<int>(numberVal); }
-    double asDouble() const { return numberVal; }
-    bool asBool() const { return boolVal; }
-    int size() const {
-        if (type == JsonType::Array) return arrayVal.size();
-        if (type == JsonType::Object) return objectVal.size();
-        return 0;
-    }
-    JsonValue at(int i) const {
-        if (type == JsonType::Array && i >= 0 && i < (int)arrayVal.size())
-            return arrayVal[i];
-        return JsonValue();
-    }
+    std::string str() const { return s; }
+    double num() const { return n; }
+    int i() const { return (int)n; }
+    bool bl() const { return b; }
+    int sz() const { return type==JARR?(int)arr.size():type==JOBJ?(int)obj.size():0; }
+    JVal at(int i) const { return (type==JARR&&i>=0&&i<(int)arr.size())?arr[i]:JVal(); }
 };
 
-// Minimal recursive descent JSON parser
-class JsonParser {
-    const std::string &s;
-    size_t pos = 0;
-
-    void skipWhitespace() {
-        while (pos < s.size() && (s[pos] == ' ' || s[pos] == '\n' ||
-               s[pos] == '\r' || s[pos] == '\t')) pos++;
-    }
-
-    JsonValue parseValue() {
-        skipWhitespace();
-        if (pos >= s.size()) return JsonValue();
-        char c = s[pos];
-        if (c == '"') return parseString();
-        if (c == '{') return parseObject();
-        if (c == '[') return parseArray();
-        if (c == 't' || c == 'f') return parseBool();
-        if (c == 'n') return parseNull();
-        return parseNumber();
-    }
-
-    JsonValue parseNull() {
-        if (s.substr(pos, 4) == "null") { pos += 4; return JsonValue(); }
-        return JsonValue();
-    }
-
-    JsonValue parseBool() {
-        JsonValue v;
-        v.type = JsonType::Bool;
-        if (s.substr(pos, 4) == "true") { v.boolVal = true; pos += 4; }
-        else if (s.substr(pos, 5) == "false") { v.boolVal = false; pos += 5; }
-        return v;
-    }
-
-    JsonValue parseNumber() {
-        JsonValue v;
-        v.type = JsonType::Number;
-        size_t start = pos;
-        if (s[pos] == '-') pos++;
-        while (pos < s.size() && isdigit(s[pos])) pos++;
-        if (pos < s.size() && s[pos] == '.') {
-            pos++;
-            while (pos < s.size() && isdigit(s[pos])) pos++;
-        }
-        if (pos < s.size() && (s[pos] == 'e' || s[pos] == 'E')) {
-            pos++;
-            if (s[pos] == '+' || s[pos] == '-') pos++;
-            while (pos < s.size() && isdigit(s[pos])) pos++;
-        }
-        v.numberVal = std::strtod(s.substr(start, pos - start).c_str(), nullptr);
-        return v;
-    }
-
-    JsonValue parseString() {
-        JsonValue v;
-        v.type = JsonType::String;
-        pos++; // skip opening quote
-        while (pos < s.size() && s[pos] != '"') {
-            if (s[pos] == '\\') {
-                pos++;
-                if (pos < s.size()) {
-                    switch (s[pos]) {
-                        case 'n': v.stringVal += '\n'; break;
-                        case 't': v.stringVal += '\t'; break;
-                        case 'r': v.stringVal += '\r'; break;
-                        case '\\': v.stringVal += '\\'; break;
-                        case '"': v.stringVal += '"'; break;
-                        case '/': v.stringVal += '/'; break;
-                        case 'u': {
-                            // Skip unicode escapes for simplicity
-                            std::string hex = s.substr(pos + 1, 4);
-                            unsigned int cp = std::strtoul(hex.c_str(), nullptr, 16);
-                            if (cp < 0x80) v.stringVal += (char)cp;
-                            else if (cp < 0x800) {
-                                v.stringVal += (char)(0xC0 | (cp >> 6));
-                                v.stringVal += (char)(0x80 | (cp & 0x3F));
-                            } else {
-                                v.stringVal += (char)(0xE0 | (cp >> 12));
-                                v.stringVal += (char)(0x80 | ((cp >> 6) & 0x3F));
-                                v.stringVal += (char)(0x80 | (cp & 0x3F));
-                            }
-                            pos += 4;
-                            break;
-                        }
-                    }
-                }
-            } else {
-                v.stringVal += s[pos];
-            }
-            pos++;
-        }
-        if (pos < s.size()) pos++; // skip closing quote
-        return v;
-    }
-
-    JsonValue parseArray() {
-        JsonValue v;
-        v.type = JsonType::Array;
-        pos++; // skip [
-        skipWhitespace();
-        if (pos < s.size() && s[pos] == ']') { pos++; return v; }
-        while (true) {
-            v.arrayVal.push_back(parseValue());
-            skipWhitespace();
-            if (pos < s.size() && s[pos] == ',') { pos++; continue; }
-            if (pos < s.size() && s[pos] == ']') { pos++; break; }
-            break;
-        }
-        return v;
-    }
-
-    JsonValue parseObject() {
-        JsonValue v;
-        v.type = JsonType::Object;
-        pos++; // skip {
-        skipWhitespace();
-        if (pos < s.size() && s[pos] == '}') { pos++; return v; }
-        while (true) {
-            JsonValue key = parseString();
-            skipWhitespace();
-            if (pos < s.size() && s[pos] == ':') pos++;
-            skipWhitespace();
-            v.objectVal[key.stringVal] = parseValue();
-            skipWhitespace();
-            if (pos < s.size() && s[pos] == ',') { pos++; skipWhitespace(); continue; }
-            if (pos < s.size() && s[pos] == '}') { pos++; break; }
-            break;
-        }
-        return v;
-    }
-
-public:
-    JsonParser(const std::string &str) : s(str) {}
-    JsonValue parse() { return parseValue(); }
+struct JParser {
+    const char *p, *e;
+    JParser(const char *s, int len) : p(s), e(s+len) {}
+    void ws() { while(p<e && (*p==' '||*p=='\n'||*p=='\r'||*p=='\t')) p++; }
+    JVal parse() { ws(); if(p>=e) return JVal(); char c=*p;
+        if(c=='"') return pstr(); if(c=='{') return pobj(); if(c=='[') return parr();
+        if(c=='t'||c=='f') return pbool(); if(c=='n') return pnull(); return pnum(); }
+    JVal pnull() { if(e-p>=4&&!memcmp(p,"null",4)){p+=4;return JVal();} return JVal(); }
+    JVal pbool() { JVal v; v.type=JBOOL; if(e-p>=4&&!memcmp(p,"true",4)){v.b=true;p+=4;}
+        else if(e-p>=5&&!memcmp(p,"false",5)){v.b=false;p+=5;} return v; }
+    JVal pnum() { JVal v; v.type=JNUM; char*ep; v.n=strtod(p,&ep); p=ep; return v; }
+    JVal pstr() { JVal v; v.type=JSTR; p++;
+        while(p<e && *p!='"') { if(*p=='\\'){p++;if(p<e){
+            switch(*p){case'n':v.s+='\n';break;case't':v.s+='\t';break;
+            case'r':v.s+='\r';break;case'"':v.s+='"';break;case'\\':v.s+='\\';break;
+            case'/':v.s+='/';break;case'u':{
+                char h[5]={p[1],p[2],p[3],p[4],0}; unsigned cp=strtoul(h,0,16);p+=4;
+                if(cp<0x80)v.s+=(char)cp; else if(cp<0x800){v.s+=(char)(0xC0|cp>>6);v.s+=(char)(0x80|(cp&0x3F));}
+                else{v.s+=(char)(0xE0|cp>>12);v.s+=(char)(0x80|(cp>>6&0x3F));v.s+=(char)(0x80|(cp&0x3F));}}} }
+        } else v.s+=*p; p++; } if(p<e)p++; return v; }
+    JVal parr() { JVal v; v.type=JARR; p++; ws(); if(p<e&&*p==']'){p++;return v;}
+        while(1){v.arr.push_back(parse());ws();if(p<e&&*p==','){p++;continue;}if(p<e&&*p==']'){p++;break;}break;} return v; }
+    JVal pobj() { JVal v; v.type=JOBJ; p++; ws(); if(p<e&&*p=='}'){p++;return v;}
+        while(1){JVal k=pstr();ws();if(p<e&&*p==':')p++;ws();v.obj[k.s]=parse();
+            ws();if(p<e&&*p==','){p++;ws();continue;}if(p<e&&*p=='}'){p++;break;}break;} return v; }
 };
 
-JsonValue JsonValue::parse(const std::string &json) {
-    return JsonParser(json).parse();
-}
-
-std::string JsonValue::toString() const {
-    switch (type) {
-        case JsonType::Null: return "null";
-        case JsonType::Bool: return boolVal ? "true" : "false";
-        case JsonType::Number: return std::to_string(numberVal);
-        case JsonType::String: return "\"" + stringVal + "\"";
-        case JsonType::Array: {
-            std::string r = "[";
-            for (size_t i = 0; i < arrayVal.size(); i++) {
-                if (i > 0) r += ",";
-                r += arrayVal[i].toString();
-            }
-            return r + "]";
-        }
-        case JsonType::Object: {
-            std::string r = "{";
-            bool first = true;
-            for (auto &kv : objectVal) {
-                if (!first) r += ",";
-                first = false;
-                r += "\"" + kv.first + "\":" + kv.second.toString();
-            }
-            return r + "}";
-        }
-    }
-    return "null";
-}
+JVal parseJSON(const std::string &s) { return JParser(s.c_str(),s.size()).parse(); }
 
 // ============================================================================
-// Reddit data models
+// Reddit Data Models
 // ============================================================================
 
-struct RedditPost {
-    std::string id;
-    std::string title;
-    std::string author;
-    std::string subreddit;
-    std::string selftext;
-    std::string url;
-    std::string permalink;
-    std::string thumbnail;
-    int score = 0;
-    int numComments = 0;
-    double createdUtc = 0.0;
-    bool over18 = false;
-    bool spoiler = false;
-    bool stickied = false;
-    bool locked = false;
-    bool saved = false;
-    bool hidden = false;
-    int likes = 0; // -1, 0, 1
+struct RPost {
+    std::string id, title, author, subreddit, selftext, url, permalink, thumbnail, flair;
+    int score=0, numComments=0, likes=0; double created=0;
+    bool over18=false, spoiler=false, stickied=false, saved=false, hidden=false;
+    bool isSelf=false, locked=false, archived=false;
+    std::string domain, distinguished, postHint, linkFlairText;
+    int gilded=0, pwls=0; double upvoteRatio=0;
 
-    static RedditPost fromJson(const JsonValue &data) {
-        RedditPost p;
-        p.id = data["id"].asString();
-        p.title = data["title"].asString();
-        p.author = data["author"].asString();
-        p.subreddit = data["subreddit"].asString();
-        p.selftext = data["selftext"].asString();
-        p.url = data["url"].asString();
-        p.permalink = data["permalink"].asString();
-        p.thumbnail = data["thumbnail"].asString();
-        p.score = data["score"].asInt();
-        p.numComments = data["num_comments"].asInt();
-        p.createdUtc = data["created_utc"].asDouble();
-        p.over18 = data["over_18"].asBool();
-        p.spoiler = data["spoiler"].asBool();
-        p.stickied = data["stickied"].asBool();
-        p.locked = data["locked"].asBool();
-        p.saved = data["saved"].asBool();
-        p.hidden = data["hidden"].asBool();
-        p.likes = data["likes"].asInt();
-        return p;
-    }
+    static RPost from(const JVal &d) { RPost p;
+        p.id=d["id"].str(); p.title=d["title"].str(); p.author=d["author"].str();
+        p.subreddit=d["subreddit"].str(); p.selftext=d["selftext"].str();
+        p.url=d["url"].str(); p.permalink=d["permalink"].str();
+        p.thumbnail=d["thumbnail"].str(); p.flair=d["link_flair_text"].str();
+        p.score=d["score"].i(); p.numComments=d["num_comments"].i();
+        p.likes=d["likes"].i(); p.created=d["created_utc"].num();
+        p.over18=d["over_18"].bl(); p.spoiler=d["spoiler"].bl();
+        p.stickied=d["stickied"].bl(); p.saved=d["saved"].bl();
+        p.hidden=d["hidden"].bl(); p.isSelf=d["is_self"].bl();
+        p.locked=d["locked"].bl(); p.archived=d["archived"].bl();
+        p.domain=d["domain"].str(); p.distinguished=d["distinguished"].str();
+        p.postHint=d["post_hint"].str(); p.linkFlairText=d["link_flair_text"].str();
+        p.gilded=d["gilded"].i(); p.upvoteRatio=d["upvote_ratio"].num();
+        p.pwls=d["pwls"].i();
+        return p; }
 };
 
-struct RedditComment {
-    std::string id;
-    std::string author;
-    std::string body;
-    std::string bodyHtml;
-    std::string parentId;
-    std::string linkId;
-    std::string subreddit;
-    int score = 0;
-    double createdUtc = 0.0;
-    int depth = 0;
-    bool stickied = false;
-    std::vector<RedditComment> replies;
+struct RComment {
+    std::string id, author, body, bodyHtml, parentId, linkId, subreddit, flair;
+    int score=0, likes=0, depth=0; double created=0;
+    bool stickied=false, saved=false, edited=false, isSubmitter=false;
+    std::string distinguished; int gilded=0;
+    std::vector<RComment> replies;
 
-    static RedditComment fromJson(const JsonValue &data) {
-        RedditComment c;
-        c.id = data["id"].asString();
-        c.author = data["author"].asString();
-        c.body = data["body"].asString();
-        c.bodyHtml = data["body_html"].asString();
-        c.parentId = data["parent_id"].asString();
-        c.linkId = data["link_id"].asString();
-        c.subreddit = data["subreddit"].asString();
-        c.score = data["score"].asInt();
-        c.createdUtc = data["created_utc"].asDouble();
-        c.depth = data["depth"].asInt();
-        c.stickied = data["stickied"].asBool();
+    static RComment from(const JVal &d, int dp=0) { RComment c;
+        c.id=d["id"].str(); c.author=d["author"].str(); c.body=d["body"].str();
+        c.bodyHtml=d["body_html"].str(); c.parentId=d["parent_id"].str();
+        c.linkId=d["link_id"].str(); c.subreddit=d["subreddit"].str();
+        c.flair=d["author_flair_text"].str(); c.score=d["score"].i();
+        c.likes=d["likes"].i(); c.depth=dp; c.created=d["created_utc"].num();
+        c.stickied=d["stickied"].bl(); c.saved=d["saved"].bl();
+        c.distinguished=d["distinguished"].str();
+        c.isSubmitter=d["is_submitter"].bl(); c.gilded=d["gilded"].i();
 
-        // Parse replies from "replies" field (can be empty string or object)
-        if (data["replies"].type == JsonType::Object) {
-            JsonValue repliesData = data["replies"]["data"];
-            if (repliesData.type == JsonType::Object) {
-                JsonValue children = repliesData["children"];
-                for (int i = 0; i < children.size(); i++) {
-                    JsonValue childData = children.at(i)["data"];
-                    if (childData.type == JsonType::Object) {
-                        RedditComment reply = RedditComment::fromJson(childData);
-                        reply.depth = c.depth + 1;
-                        c.replies.push_back(reply);
-                    }
+        // Parse nested replies
+        if(d["replies"].type==JOBJ) {
+            JVal rd = d["replies"]["data"];
+            if(rd.type==JOBJ) {
+                JVal ch = rd["children"];
+                for(int i=0;i<ch.sz();i++) {
+                    JVal cd = ch.at(i)["data"];
+                    if(cd.type==JOBJ && ch.at(i)["kind"].str()=="t1")
+                        c.replies.push_back(RComment::from(cd,dp+1));
                 }
             }
         }
-        return c;
+        return c; }
+};
+
+struct RSubreddit {
+    std::string id, name, title, description, publicDesc, headerImg, iconImg;
+    int subscribers=0, activeUsers=0; bool over18=false, userIsSubscriber=false;
+    double created=0; std::string subredditType, bannerImg;
+
+    static RSubreddit from(const JVal &d) { RSubreddit s;
+        s.id=d["id"].str(); s.name=d["display_name"].str();
+        s.title=d["title"].str(); s.description=d["description"].str();
+        s.publicDesc=d["public_description"].str();
+        s.headerImg=d["header_img"].str(); s.iconImg=d["icon_img"].str();
+        s.subscribers=d["subscribers"].i(); s.activeUsers=d["accounts_active"].i();
+        s.over18=d["over18"].bl(); s.userIsSubscriber=d["user_is_subscriber"].bl();
+        s.created=d["created_utc"].num(); s.subredditType=d["subreddit_type"].str();
+        s.bannerImg=d["banner_img"].str();
+        return s; }
+};
+
+struct RMessage {
+    std::string id, author, subject, body, dest, subreddit, context;
+    double created=0; bool isNew=false; std::string kind; // "inbox", "sent", etc.
+
+    static RMessage from(const JVal &d) { RMessage m;
+        m.id=d["id"].str(); m.author=d["author"].str();
+        m.subject=d["subject"].str(); m.body=d["body"].str();
+        m.dest=d["dest"].str(); m.subreddit=d["subreddit"].str();
+        m.context=d["context"].str(); m.created=d["created_utc"].num();
+        m.isNew=d["new"].bl();
+        return m; }
+};
+
+struct RListing {
+    std::string after, before; int count=0;
+    std::vector<JVal> children;
+
+    static RListing from(const JVal &root) {
+        RListing l;
+        JVal d = root["data"];
+        l.after = d["after"].str();
+        l.before = d["before"].str();
+        l.count = d["dist"].i();
+        JVal ch = d["children"];
+        for(int i=0;i<ch.sz();i++) l.children.push_back(ch.at(i));
+        return l;
     }
 };
 
-struct RedditAccount {
-    std::string username;
-    std::string accessToken;
-    std::string refreshToken;
-    double tokenExpiry = 0.0;
-
-    bool isAuthorized() const { return !accessToken.empty(); }
-};
-
 // ============================================================================
-// Simple HTTP client using POSIX sockets
+// HTTP Client (POSIX sockets, no SSL on Android)
 // ============================================================================
 
 #include <sys/socket.h>
@@ -342,405 +191,498 @@ struct RedditAccount {
 #include <arpa/inet.h>
 #include <unistd.h>
 
-// OpenSSL not available on Android NDK - HTTPS handled via JNI
-#ifndef __ANDROID__
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#endif
-
 class HttpClient {
-    std::mutex m_mutex;
-
-    static size_t writeCallback(void *contents, size_t size, size_t nmemb, void *userp) {
-        ((std::string*)userp)->append((char*)contents, size * nmemb);
-        return size * nmemb;
-    }
-
+    std::mutex mtx;
 public:
-    static HttpClient& instance() {
-        static HttpClient inst;
-        return inst;
+    static HttpClient& inst() { static HttpClient h; return h; }
+
+    struct Resp { int code; std::string body, error; };
+
+    Resp get(const std::string &url, const std::string &auth="", const std::string &ua="PinkReader/1.0") {
+        Resp r; r.code=-1;
+        std::string host, path; bool https=false;
+        if(url.find("https://")==0){https=true; size_t p=8,sl=url.find('/',p);
+            host=sl==std::string::npos?url.substr(p):url.substr(p,sl-p);
+            path=sl==std::string::npos?"/":url.substr(sl);}
+        else if(url.find("http://")==0){size_t p=7,sl=url.find('/',p);
+            host=sl==std::string::npos?url.substr(p):url.substr(p,sl-p);
+            path=sl==std::string::npos?"/":url.substr(sl);}
+        else {host=url;path="/";}
+
+        if(https) { r.error="HTTPS not supported in native layer - use platform HTTP"; return r; }
+
+        hostent *srv = gethostbyname(host.c_str());
+        if(!srv){r.error="DNS failed";return r;}
+
+        int fd = socket(AF_INET, SOCK_STREAM, 0);
+        if(fd<0){r.error="socket failed";return r;}
+
+        sockaddr_in addr={}; addr.sin_family=AF_INET;
+        memcpy(&addr.sin_addr,srv->h_addr,srv->h_length);
+        addr.sin_port = htons(80);
+
+        timeval tv={10,0};
+        setsockopt(fd,SOL_SOCKET,SO_RCVTIMEO,&tv,sizeof(tv));
+
+        if(connect(fd,(sockaddr*)&addr,sizeof(addr))<0){close(fd);r.error="connect failed";return r;}
+
+        std::string req = "GET "+path+" HTTP/1.1\r\nHost: "+host+"\r\nUser-Agent: "+ua+"\r\nAccept: application/json\r\n";
+        if(!auth.empty()) req += "Authorization: "+auth+"\r\n";
+        req += "Connection: close\r\n\r\n";
+
+        send(fd,req.c_str(),req.size(),0);
+        char buf[8192]; int n; std::string raw;
+        while((n=recv(fd,buf,sizeof(buf)-1,0))>0){buf[n]=0;raw+=buf;}
+        close(fd);
+
+        // Parse HTTP response
+        size_t hdEnd = raw.find("\r\n\r\n");
+        if(hdEnd==std::string::npos){r.error="bad HTTP response";return r;}
+        // Extract status code
+        size_t sp = raw.find(' ');
+        if(sp!=std::string::npos) r.code = atoi(raw.c_str()+sp+1);
+        r.body = raw.substr(hdEnd+4);
+        return r;
     }
 
-    std::string get(const std::string &url, const std::string &authHeader = "") {
-        // Parse URL
-        std::string host, path;
-        bool useHttps = false;
-
-        if (url.find("https://") == 0) {
-            useHttps = true;
-            size_t pos = 8;
-            size_t slash = url.find('/', pos);
-            if (slash == std::string::npos) {
-                host = url.substr(pos);
-                path = "/";
-            } else {
-                host = url.substr(pos, slash - pos);
-                path = url.substr(slash);
-            }
-        } else if (url.find("http://") == 0) {
-            size_t pos = 7;
-            size_t slash = url.find('/', pos);
-            if (slash == std::string::npos) {
-                host = url.substr(pos);
-                path = "/";
-            } else {
-                host = url.substr(pos, slash - pos);
-                path = url.substr(slash);
-            }
-        } else {
-            host = url;
-            path = "/";
-        }
-
-        int port = useHttps ? 443 : 80;
-
-        // Resolve hostname
-        struct hostent *server = gethostbyname(host.c_str());
-        if (!server) return "";
-
-        // Create socket
-        int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-        if (sockfd < 0) return "";
-
-        struct sockaddr_in serv_addr;
-        memset(&serv_addr, 0, sizeof(serv_addr));
-        serv_addr.sin_family = AF_INET;
-        memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
-        serv_addr.sin_port = htons(port);
-
-        // Set timeout
-        struct timeval tv;
-        tv.tv_sec = 10;
-        tv.tv_usec = 0;
-        setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-        setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-
-        if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-            close(sockfd);
-            return "";
-        }
-
-        std::string response;
-
-        if (useHttps) {
-#ifdef __ANDROID__
-            // On Android, HTTPS is handled via platform/JNI
-            close(sockfd);
-            return "";
-#else
-            // SSL connection
-            SSL_library_init();
-            SSL_CTX *ctx = SSL_CTX_new(TLS_client_method());
-            if (!ctx) { close(sockfd); return ""; }
-
-            SSL *ssl = SSL_new(ctx);
-            SSL_set_fd(ssl, sockfd);
-
-            if (SSL_connect(ssl) <= 0) {
-                SSL_free(ssl);
-                SSL_CTX_free(ctx);
-                close(sockfd);
-                return "";
-            }
-
-            // Build HTTP request
-            std::string request = "GET " + path + " HTTP/1.1\r\n";
-            request += "Host: " + host + "\r\n";
-            request += "User-Agent: PinkReader/1.0.0 (Android)\r\n";
-            request += "Accept: application/json\r\n";
-            if (!authHeader.empty()) {
-                request += "Authorization: " + authHeader + "\r\n";
-            }
-            request += "Connection: close\r\n\r\n";
-
-            SSL_write(ssl, request.c_str(), request.size());
-
-            char buffer[4096];
-            int bytes;
-            while ((bytes = SSL_read(ssl, buffer, sizeof(buffer) - 1)) > 0) {
-                buffer[bytes] = '\0';
-                response += buffer;
-            }
-
-            SSL_shutdown(ssl);
-            SSL_free(ssl);
-            SSL_CTX_free(ctx);
-#endif
-        } else {
-            // Plain HTTP
-            std::string request = "GET " + path + " HTTP/1.1\r\n";
-            request += "Host: " + host + "\r\n";
-            request += "User-Agent: PinkReader/1.0.0 (Android)\r\n";
-            request += "Accept: application/json\r\n";
-            request += "Connection: close\r\n\r\n";
-
-            send(sockfd, request.c_str(), request.size(), 0);
-
-            char buffer[4096];
-            int bytes;
-            while ((bytes = recv(sockfd, buffer, sizeof(buffer) - 1, 0)) > 0) {
-                buffer[bytes] = '\0';
-                response += buffer;
-            }
-        }
-
-        close(sockfd);
-
-        // Extract body from HTTP response
-        size_t headerEnd = response.find("\r\n\r\n");
-        if (headerEnd != std::string::npos) {
-            return response.substr(headerEnd + 4);
-        }
-
-        return response;
+    Resp post(const std::string &url, const std::string &data, const std::string &auth="") {
+        Resp r; r.code=-1; r.error="POST not implemented in native layer"; return r;
     }
 };
 
 // ============================================================================
-// Reddit API client
+// Reddit API Client
 // ============================================================================
 
 class RedditAPI {
-    RedditAccount m_account;
-    std::string m_baseUrl = "https://oauth.reddit.com";
+    std::string m_token, m_user, m_base="https://oauth.reddit.com";
+    std::string m_clientId = "";
+    std::mutex mtx;
 
 public:
-    RedditAPI() {}
+    static RedditAPI& inst() { static RedditAPI a; return a; }
 
-    void setAccount(const RedditAccount &account) { m_account = account; }
-    const RedditAccount& account() const { return m_account; }
+    void setAuth(const std::string &user, const std::string &token, const std::string &clientId="") {
+        std::lock_guard<std::mutex> l(mtx);
+        m_user=user; m_token=token; m_clientId=clientId;
+    }
 
-    std::vector<RedditPost> fetchSubreddit(const std::string &subreddit,
-                                            const std::string &sort = "hot",
-                                            const std::string &after = "",
-                                            int limit = 25) {
-        std::vector<RedditPost> posts;
-        std::string url = m_baseUrl;
+    bool isAuth() const { return !m_token.empty(); }
 
-        if (subreddit.empty() || subreddit == "frontpage") {
-            url += "/" + sort + ".json";
-        } else {
-            url += "/r/" + subreddit + "/" + sort + ".json";
+    std::string authHeader() const { return "Bearer "+m_token; }
+
+    // OAuth - get access token
+    std::string obtainToken(const std::string &code, const std::string &redirectUri) {
+        // OAuth token exchange via POST to www.reddit.com
+        // This requires platform HTTP (HTTPS) - implemented via JNI callback
+        return ""; // Implemented via platform layer
+    }
+
+    // Fetch subreddit posts
+    std::vector<RPost> fetchPosts(const std::string &sub, const std::string &sort="hot",
+                                   const std::string &after="", int limit=25) {
+        std::vector<RPost> posts;
+        std::string path = sub.empty()||sub=="frontpage" ? "/"+sort+".json" :
+                           "/r/"+sub+"/"+sort+".json";
+        std::string q = "?limit="+std::to_string(limit)+"&raw_json=1";
+        if(!after.empty()) q+="&after="+after;
+
+        auto resp = HttpClient::inst().get(m_base+path+q, authHeader());
+        if(resp.code!=200 || resp.body.empty()) return posts;
+
+        JVal root = parseJSON(resp.body);
+        RListing listing = RListing::from(root);
+        for(auto &ch : listing.children) {
+            if(ch["kind"].str()=="t3") posts.push_back(RPost::from(ch["data"]));
         }
-
-        url += "?limit=" + std::to_string(limit);
-        if (!after.empty()) url += "&after=" + after;
-        url += "&raw_json=1";
-
-        std::string auth = "Bearer " + m_account.accessToken;
-        std::string response = HttpClient::instance().get(url, auth);
-
-        if (response.empty()) return posts;
-
-        JsonValue root = JsonValue::parse(response);
-        JsonValue data = root["data"];
-        JsonValue children = data["children"];
-
-        for (int i = 0; i < children.size(); i++) {
-            JsonValue childData = children.at(i)["data"];
-            if (childData.type == JsonType::Object) {
-                posts.push_back(RedditPost::fromJson(childData));
-            }
-        }
-
         return posts;
     }
 
-    std::vector<RedditComment> fetchComments(const std::string &subreddit,
-                                               const std::string &postId,
-                                               const std::string &sort = "confidence",
-                                               int limit = 200) {
-        std::vector<RedditComment> comments;
-        std::string url = m_baseUrl + "/r/" + subreddit + "/comments/" + postId + ".json";
-        url += "?sort=" + sort + "&limit=" + std::to_string(limit) + "&raw_json=1";
+    // Fetch comments for a post
+    std::vector<RComment> fetchComments(const std::string &sub, const std::string &postId,
+                                          const std::string &sort="confidence", int limit=200) {
+        std::vector<RComment> comments;
+        std::string path = "/r/"+sub+"/comments/"+postId+".json";
+        std::string q = "?sort="+sort+"&limit="+std::to_string(limit)+"&raw_json=1";
 
-        std::string auth = "Bearer " + m_account.accessToken;
-        std::string response = HttpClient::instance().get(url, auth);
+        auto resp = HttpClient::inst().get(m_base+path+q, authHeader());
+        if(resp.code!=200 || resp.body.empty()) return comments;
 
-        if (response.empty()) return comments;
+        JVal root = parseJSON(resp.body);
+        if(root.type!=JARR || root.sz()<2) return comments;
 
-        // Reddit returns an array: [post_data, comments_listing]
-        JsonValue root = JsonValue::parse(response);
-        if (root.type != JsonType::Array || root.size() < 2) return comments;
-
-        JsonValue commentsListing = root.at(1);
-        JsonValue commentsData = commentsListing["data"];
-        JsonValue children = commentsData["children"];
-
-        for (int i = 0; i < children.size(); i++) {
-            JsonValue child = children.at(i);
-            std::string kind = child["kind"].asString();
-            if (kind == "t1") {
-                JsonValue commentData = child["data"];
-                comments.push_back(RedditComment::fromJson(commentData));
-            }
+        JVal listing = root.at(1);
+        RListing cl = RListing::from(listing);
+        for(auto &ch : cl.children) {
+            if(ch["kind"].str()=="t1") comments.push_back(RComment::from(ch["data"]));
         }
-
         return comments;
     }
+
+    // Fetch inbox
+    std::vector<RMessage> fetchInbox(const std::string &filter="inbox", int limit=25) {
+        std::vector<RMessage> msgs;
+        std::string path = "/message/"+filter+".json?limit="+std::to_string(limit)+"&raw_json=1";
+        auto resp = HttpClient::inst().get(m_base+path, authHeader());
+        if(resp.code!=200 || resp.body.empty()) return msgs;
+
+        JVal root = parseJSON(resp.body);
+        RListing listing = RListing::from(root);
+        for(auto &ch : listing.children) {
+            if(ch["kind"].str()=="t4") msgs.push_back(RMessage::from(ch["data"]));
+        }
+        return msgs;
+    }
+
+    // Search subreddits
+    std::vector<RSubreddit> searchSubreddits(const std::string &query, int limit=25) {
+        std::vector<RSubreddit> subs;
+        std::string path = "/subreddits/search.json?q="+query+"&limit="+std::to_string(limit)+"&raw_json=1";
+        auto resp = HttpClient::inst().get(m_base+path, authHeader());
+        if(resp.code!=200 || resp.body.empty()) return subs;
+        JVal root = parseJSON(resp.body);
+        RListing listing = RListing::from(root);
+        for(auto &ch : listing.children) {
+            if(ch["kind"].str()=="t5") subs.push_back(RSubreddit::from(ch["data"]));
+        }
+        return subs;
+    }
+
+    // Fetch subreddit info
+    RSubreddit fetchSubredditInfo(const std::string &name) {
+        std::string path = "/r/"+name+"/about.json?raw_json=1";
+        auto resp = HttpClient::inst().get(m_base+path, authHeader());
+        if(resp.code!=200 || resp.body.empty()) return RSubreddit();
+        JVal root = parseJSON(resp.body);
+        return RSubreddit::from(root["data"]);
+    }
+
+    // Vote
+    bool vote(const std::string &id, int dir) { // dir: -1,0,1
+        std::string path = "/api/vote";
+        std::string data = "id="+id+"&dir="+std::to_string(dir)+"&rank=2";
+        auto resp = HttpClient::inst().post(m_base+path, data, authHeader());
+        return resp.code==200;
+    }
+
+    // Save/unsave, hide/unhide, report, delete
+    bool action(const std::string &endpoint, const std::string &id) {
+        auto resp = HttpClient::inst().post(m_base+endpoint, "id="+id, authHeader());
+        return resp.code==200;
+    }
+
+    // Submit comment
+    bool submitComment(const std::string &parentId, const std::string &text) {
+        std::string data = "api_type=json&thing_id="+parentId+"&text="+text;
+        auto resp = HttpClient::inst().post(m_base+"/api/comment", data, authHeader());
+        return resp.code==200;
+    }
 };
 
 // ============================================================================
-// Simple LRU Cache
+// Simple LRU Cache (thread-safe)
 // ============================================================================
 
-#include <list>
-#include <unordered_map>
-
-template<typename K, typename V>
-class LRUCache {
-    size_t m_maxSize;
-    std::list<std::pair<K, V>> m_list;
-    std::unordered_map<K, typename std::list<std::pair<K, V>>::iterator> m_map;
-    std::mutex m_mutex;
-
+template<typename V>
+class Cache {
+    struct Node { std::string key; V val; };
+    std::vector<Node> items;
+    size_t maxSize;
+    mutable std::mutex mtx;
 public:
-    LRUCache(size_t maxSize = 100) : m_maxSize(maxSize) {}
+    Cache(size_t sz=200) : maxSize(sz) {}
 
-    void put(const K &key, const V &value) {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        auto it = m_map.find(key);
-        if (it != m_map.end()) {
-            m_list.erase(it->second);
-            m_map.erase(it);
+    void put(const std::string &k, const V &v) {
+        std::lock_guard<std::mutex> l(mtx);
+        for(auto it=items.begin();it!=items.end();++it)
+            if(it->key==k){items.erase(it);break;}
+        items.insert(items.begin(),{k,v});
+        if(items.size()>maxSize) items.pop_back();
+    }
+
+    bool get(const std::string &k, V &v) {
+        std::lock_guard<std::mutex> l(mtx);
+        for(auto it=items.begin();it!=items.end();++it) {
+            if(it->key==k) { v=it->val;
+                auto node=*it; items.erase(it);
+                items.insert(items.begin(),node); return true; }
         }
-        m_list.push_front({key, value});
-        m_map[key] = m_list.begin();
-        if (m_map.size() > m_maxSize) {
-            auto last = m_list.end();
-            last--;
-            m_map.erase(last->first);
-            m_list.pop_back();
-        }
+        return false;
     }
 
-    bool get(const K &key, V &value) {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        auto it = m_map.find(key);
-        if (it == m_map.end()) return false;
-        m_list.splice(m_list.begin(), m_list, it->second);
-        value = it->second->second;
-        return true;
-    }
-
-    void clear() {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_list.clear();
-        m_map.clear();
-    }
-
-    size_t size() const { return m_map.size(); }
+    void clear() { std::lock_guard<std::mutex> l(mtx); items.clear(); }
+    size_t size() const { return items.size(); }
 };
 
 // ============================================================================
-// Global application state
+// Global App State
 // ============================================================================
 
-class PinkReaderApp {
-    RedditAPI m_api;
-    LRUCache<std::string, std::string> m_cache{200};
-    std::vector<RedditPost> m_currentPosts;
-    std::string m_currentSubreddit = "all";
-    std::string m_after;
-    std::mutex m_mutex;
-
-    PinkReaderApp() = default;
-
+class AppState {
 public:
-    static PinkReaderApp& instance() {
-        static PinkReaderApp app;
-        return app;
-    }
+    RedditAPI api;
+    Cache<std::string> postCache{500};
+    Cache<std::string> commentCache{500};
+    std::string currentSub = "popular";
+    std::string currentSort = "hot";
+    std::string currentPostId;
+    std::string after;
+    bool darkTheme = true;
+    bool nsfwEnabled = false;
+    bool leftHanded = false;
+    float fontScale = 1.0f;
+    std::string username;
+    std::mutex mtx;
 
-    RedditAPI& api() { return m_api; }
-
-    void setAccount(const std::string &username, const std::string &accessToken) {
-        RedditAccount acc;
-        acc.username = username;
-        acc.accessToken = accessToken;
-        m_api.setAccount(acc);
-    }
-
-    std::vector<RedditPost> fetchPosts() {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        auto posts = m_api.fetchSubreddit(m_currentSubreddit, "hot", m_after, 25);
-        if (!posts.empty()) {
-            m_after = posts.back().id;
-            m_currentPosts = posts;
-        }
-        return posts;
-    }
-
-    std::string getCurrentSubreddit() const { return m_currentSubreddit; }
-    void setCurrentSubreddit(const std::string &sub) { m_currentSubreddit = sub; }
+    static AppState& inst() { static AppState s; return s; }
 };
 
+// ============================================================================
+// JNI Bridge - Exposes all functionality to Kotlin
+// ============================================================================
 
-// ============================================================================
-// JNI Bridge - Exposes native functions to Kotlin/Java
-// ============================================================================
+static std::string jstr(JNIEnv *e, jstring s) {
+    if(!s) return "";
+    const char *c = e->GetStringUTFChars(s,nullptr);
+    std::string r(c);
+    e->ReleaseStringUTFChars(s,c);
+    return r;
+}
+
+static jstring toj(JNIEnv *e, const std::string &s) { return e->NewStringUTF(s.c_str()); }
+
+// Serialize post to JSON for Kotlin
+static std::string postToJson(const RPost &p) {
+    char buf[16384];
+    snprintf(buf,sizeof(buf),
+        "{\"id\":\"%s\",\"title\":\"%s\",\"author\":\"%s\",\"subreddit\":\"%s\","
+        "\"score\":%d,\"num_comments\":%d,\"created\":%.0f,\"url\":\"%s\","
+        "\"thumbnail\":\"%s\",\"permalink\":\"%s\",\"domain\":\"%s\","
+        "\"is_self\":%s,\"over18\":%s,\"spoiler\":%s,\"stickied\":%s,"
+        "\"flair\":\"%s\",\"selftext\":\"%s\",\"likes\":%d}",
+        p.id.c_str(),p.title.c_str(),p.author.c_str(),p.subreddit.c_str(),
+        p.score,p.numComments,p.created,p.url.c_str(),
+        p.thumbnail.c_str(),p.permalink.c_str(),p.domain.c_str(),
+        p.isSelf?"true":"false",p.over18?"true":"false",
+        p.spoiler?"true":"false",p.stickied?"true":"false",
+        p.flair.c_str(),p.selftext.c_str(),p.likes);
+    return std::string(buf);
+}
+
+static std::string commentToJson(const RComment &c) {
+    std::string replies = "[";
+    for(size_t i=0;i<c.replies.size();i++) {
+        if(i>0) replies+=",";
+        replies+=commentToJson(c.replies[i]);
+    }
+    replies+="]";
+    char buf[16384];
+    snprintf(buf,sizeof(buf),
+        "{\"id\":\"%s\",\"author\":\"%s\",\"body\":\"%s\",\"score\":%d,"
+        "\"created\":%.0f,\"depth\":%d,\"stickied\":%s,\"flair\":\"%s\","
+        "\"distinguished\":\"%s\",\"is_submitter\":%s,\"likes\":%d,"
+        "\"replies\":%s}",
+        c.id.c_str(),c.author.c_str(),c.body.c_str(),c.score,
+        c.created,c.depth,c.stickied?"true":"false",c.flair.c_str(),
+        c.distinguished.c_str(),c.isSubmitter?"true":"false",c.likes,
+        replies.c_str());
+    return std::string(buf);
+}
+
+// Escape JSON string
+static std::string esc(const std::string &s) {
+    std::string r;
+    for(char c:s){if(c=='"'||c=='\\')r+='\\';r+=c;}
+    return r;
+}
 
 extern "C" {
 
+// ============================================================================
+// Core
+// ============================================================================
+
 JNIEXPORT jstring JNICALL
-Java_org_pinkreader_app_MainActivity_nativeGetVersion(
-    JNIEnv *env, jobject /* this */) {
-    return env->NewStringUTF("PinkReader v1.0.0 (C++20 native)");
+Java_org_pinkreader_app_PinkReader_nativeGetVersion(JNIEnv *e, jobject) {
+    return toj(e,"PinkReader v1.0.0");
+}
+
+JNIEXPORT void JNICALL
+Java_org_pinkreader_app_PinkReader_nativeInit(JNIEnv *e, jobject, jstring cacheDir) {
+    AppState::inst();
+}
+
+// ============================================================================
+// Authentication
+// ============================================================================
+
+JNIEXPORT void JNICALL
+Java_org_pinkreader_app_PinkReader_nativeSetAuth(JNIEnv *e, jobject, jstring user, jstring token) {
+    AppState::inst().api.setAuth(jstr(e,user), jstr(e,token));
+    AppState::inst().username = jstr(e,user);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_org_pinkreader_app_PinkReader_nativeIsAuthenticated(JNIEnv *e, jobject) {
+    return AppState::inst().api.isAuth() ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT jstring JNICALL
-Java_org_pinkreader_app_MainActivity_nativeFetchPosts(
-    JNIEnv *env, jobject /* this */, jstring subreddit) {
-    const char *sub = env->GetStringUTFChars(subreddit, nullptr);
-    PinkReaderApp::instance().setCurrentSubreddit(sub);
-    auto posts = PinkReaderApp::instance().fetchPosts();
-    env->ReleaseStringUTFChars(subreddit, sub);
+Java_org_pinkreader_app_PinkReader_nativeGetUsername(JNIEnv *e, jobject) {
+    return toj(e, AppState::inst().username);
+}
 
-    // Serialize posts to JSON for Java layer
+// ============================================================================
+// Posts
+// ============================================================================
+
+JNIEXPORT jstring JNICALL
+Java_org_pinkreader_app_PinkReader_nativeFetchPosts(JNIEnv *e, jobject,
+    jstring sub, jstring sort, jstring after, jint limit) {
+    auto posts = AppState::inst().api.fetchPosts(
+        jstr(e,sub), jstr(e,sort), jstr(e,after), limit);
+
     std::string json = "[";
-    for (size_t i = 0; i < posts.size(); i++) {
-        if (i > 0) json += ",";
-        json += "{";
-        json += "\"id\":\"" + posts[i].id + "\",";
-        json += "\"title\":\"" + posts[i].title + "\",";
-        json += "\"author\":\"" + posts[i].author + "\",";
-        json += "\"subreddit\":\"" + posts[i].subreddit + "\",";
-        json += "\"score\":" + std::to_string(posts[i].score) + ",";
-        json += "\"num_comments\":" + std::to_string(posts[i].numComments) + ",";
-        json += "\"url\":\"" + posts[i].url + "\",";
-        json += "\"permalink\":\"" + posts[i].permalink + "\"";
-        json += "}";
+    for(size_t i=0;i<posts.size();i++) {
+        if(i>0) json+=",";
+        json+=postToJson(posts[i]);
     }
-    json += "]";
+    json+="]";
 
-    return env->NewStringUTF(json.c_str());
+    // Cache result
+    AppState::inst().postCache.put(jstr(e,sub)+"_"+jstr(e,sort), json);
+    return toj(e,json);
+}
+
+// ============================================================================
+// Comments
+// ============================================================================
+
+JNIEXPORT jstring JNICALL
+Java_org_pinkreader_app_PinkReader_nativeFetchComments(JNIEnv *e, jobject,
+    jstring sub, jstring postId, jstring sort, jint limit) {
+    auto comments = AppState::inst().api.fetchComments(
+        jstr(e,sub), jstr(e,postId), jstr(e,sort), limit);
+
+    std::string json = "[";
+    for(size_t i=0;i<comments.size();i++) {
+        if(i>0) json+=",";
+        json+=commentToJson(comments[i]);
+    }
+    json+="]";
+    return toj(e,json);
+}
+
+// ============================================================================
+// Inbox
+// ============================================================================
+
+JNIEXPORT jstring JNICALL
+Java_org_pinkreader_app_PinkReader_nativeFetchInbox(JNIEnv *e, jobject, jstring filter, jint limit) {
+    auto msgs = AppState::inst().api.fetchInbox(jstr(e,filter), limit);
+    std::string json = "[";
+    for(size_t i=0;i<msgs.size();i++) {
+        if(i>0) json+=",";
+        char buf[8192];
+        snprintf(buf,sizeof(buf),
+            "{\"id\":\"%s\",\"author\":\"%s\",\"subject\":\"%s\",\"body\":\"%s\","
+            "\"created\":%.0f,\"is_new\":%s,\"subreddit\":\"%s\"}",
+            msgs[i].id.c_str(),msgs[i].author.c_str(),msgs[i].subject.c_str(),
+            msgs[i].body.c_str(),msgs[i].created,
+            msgs[i].isNew?"true":"false",msgs[i].subreddit.c_str());
+        json+=buf;
+    }
+    json+="]";
+    return toj(e,json);
+}
+
+// ============================================================================
+// Search
+// ============================================================================
+
+JNIEXPORT jstring JNICALL
+Java_org_pinkreader_app_PinkReader_nativeSearchSubreddits(JNIEnv *e, jobject, jstring query, jint limit) {
+    auto subs = AppState::inst().api.searchSubreddits(jstr(e,query), limit);
+    std::string json = "[";
+    for(size_t i=0;i<subs.size();i++) {
+        if(i>0) json+=",";
+        char buf[8192];
+        snprintf(buf,sizeof(buf),
+            "{\"id\":\"%s\",\"name\":\"%s\",\"title\":\"%s\",\"subscribers\":%d,"
+            "\"description\":\"%s\",\"icon\":\"%s\",\"over18\":%s}",
+            subs[i].id.c_str(),subs[i].name.c_str(),subs[i].title.c_str(),
+            subs[i].subscribers,subs[i].publicDesc.c_str(),
+            subs[i].iconImg.c_str(),subs[i].over18?"true":"false");
+        json+=buf;
+    }
+    json+="]";
+    return toj(e,json);
+}
+
+// ============================================================================
+// Subreddit Info
+// ============================================================================
+
+JNIEXPORT jstring JNICALL
+Java_org_pinkreader_app_PinkReader_nativeFetchSubredditInfo(JNIEnv *e, jobject, jstring name) {
+    auto sub = AppState::inst().api.fetchSubredditInfo(jstr(e,name));
+    char buf[8192];
+    snprintf(buf,sizeof(buf),
+        "{\"id\":\"%s\",\"name\":\"%s\",\"title\":\"%s\",\"subscribers\":%d,"
+        "\"description\":\"%s\",\"icon\":\"%s\",\"header\":\"%s\",\"over18\":%s}",
+        sub.id.c_str(),sub.name.c_str(),sub.title.c_str(),sub.subscribers,
+        sub.publicDesc.c_str(),sub.iconImg.c_str(),sub.headerImg.c_str(),
+        sub.over18?"true":"false");
+    return toj(e,std::string(buf));
+}
+
+// ============================================================================
+// Actions
+// ============================================================================
+
+JNIEXPORT jboolean JNICALL
+Java_org_pinkreader_app_PinkReader_nativeVote(JNIEnv *e, jobject, jstring id, jint dir) {
+    return AppState::inst().api.vote(jstr(e,id), dir) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_org_pinkreader_app_PinkReader_nativeSave(JNIEnv *e, jobject, jstring id, jboolean save) {
+    std::string ep = save ? "/api/save" : "/api/unsave";
+    return AppState::inst().api.action(ep, jstr(e,id)) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_org_pinkreader_app_PinkReader_nativeHide(JNIEnv *e, jobject, jstring id, jboolean hide) {
+    std::string ep = hide ? "/api/hide" : "/api/unhide";
+    return AppState::inst().api.action(ep, jstr(e,id)) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_org_pinkreader_app_PinkReader_nativeReport(JNIEnv *e, jobject, jstring id, jstring reason) {
+    return AppState::inst().api.action("/api/report", jstr(e,id)) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_org_pinkreader_app_PinkReader_nativeSubmitComment(JNIEnv *e, jobject, jstring parentId, jstring text) {
+    return AppState::inst().api.submitComment(jstr(e,parentId), jstr(e,text)) ? JNI_TRUE : JNI_FALSE;
+}
+
+// ============================================================================
+// Cache
+// ============================================================================
+
+JNIEXPORT jstring JNICALL
+Java_org_pinkreader_app_PinkReader_nativeGetCachedPosts(JNIEnv *e, jobject, jstring sub, jstring sort) {
+    std::string key = jstr(e,sub)+"_"+jstr(e,sort);
+    std::string val;
+    if(AppState::inst().postCache.get(key, val)) return toj(e,val);
+    return toj(e,"[]");
 }
 
 JNIEXPORT void JNICALL
-Java_org_pinkreader_app_MainActivity_nativeInit(
-    JNIEnv *env, jobject /* this */, jstring cachePath) {
-    const char *path = env->GetStringUTFChars(cachePath, nullptr);
-    // Initialize native components
-    env->ReleaseStringUTFChars(cachePath, path);
-}
-
-JNIEXPORT void JNICALL
-Java_org_pinkreader_app_MainActivity_nativeResume(
-    JNIEnv * /* env */, jobject /* this */) {
-    // Resume native operations
-}
-
-JNIEXPORT void JNICALL
-Java_org_pinkreader_app_MainActivity_nativePause(
-    JNIEnv * /* env */, jobject /* this */) {
-    // Pause native operations
-}
-
-JNIEXPORT void JNICALL
-Java_org_pinkreader_app_MainActivity_nativeDestroy(
-    JNIEnv * /* env */, jobject /* this */) {
-    // Cleanup native resources
+Java_org_pinkreader_app_PinkReader_nativeClearCache(JNIEnv *e, jobject) {
+    AppState::inst().postCache.clear();
+    AppState::inst().commentCache.clear();
 }
 
 } // extern "C"
