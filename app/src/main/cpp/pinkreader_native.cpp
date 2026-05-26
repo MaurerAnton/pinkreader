@@ -183,6 +183,7 @@ static Subreddit parseSubredditInfo(const std::string &json){return Subreddit::f
 // ============================================================================
 // URL Builders — construct Reddit API URLs (called by Kotlin for HTTPS)
 // ============================================================================
+extern "C" {
 JNIEXPORT jstring JNICALL Java_org_pinkreader_app_PinkReader_nativeBuildPostsUrl(JNIEnv *e,jobject,jstring sub,jstring sort,jstring after,jint limit){
     std::string s=js(e,sub); if(s=="frontpage"||s=="")s="";
     std::string so=js(e,sort); if(so.empty())so="hot";  // Fix: null/empty sort guard
@@ -323,3 +324,4 @@ JNIEXPORT jboolean JNICALL Java_org_pinkreader_app_PinkReader_nativeRunTests(JNI
 JNIEXPORT jboolean JNICALL Java_org_pinkreader_app_PinkReaderSettings_nativeGetDarkTheme(JNIEnv*,jobject){return AppState::i().darkTheme?JNI_TRUE:JNI_FALSE;}
 JNIEXPORT void JNICALL Java_org_pinkreader_app_PinkReaderSettings_nativeSetDarkTheme(JNIEnv*,jobject,jboolean d){AppState::i().darkTheme=d;}
 JNIEXPORT void JNICALL Java_org_pinkreader_app_PinkReaderSettings_nativeClearCache(JNIEnv*,jobject){AppState::i().postCache.clear();}
+} // extern "C"

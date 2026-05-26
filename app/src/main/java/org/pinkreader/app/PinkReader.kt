@@ -23,10 +23,7 @@ import kotlin.math.abs
 class PinkReader : AppCompatActivity() {
     companion object {
         const val TAG = "PinkReader"
-        val nativeLoaded: Boolean = run {
-            try { System.loadLibrary("pinkreader_native"); true }
-            catch(e: UnsatisfiedLinkError) { Log.e(TAG,"Failed to load native lib",e); false }
-        }
+        val nativeLoaded: Boolean = run { try { System.loadLibrary("pinkreader_native"); true } catch(e: UnsatisfiedLinkError) { Log.e(TAG,"Failed to load native lib",e); false } }
     }
 
     // ── Native declarations ──────────────────────────────────────────
@@ -59,7 +56,7 @@ class PinkReader : AppCompatActivity() {
     private fun jniBool(b: ()->Boolean) = if(nativeLoaded) try{b()}catch(e:Exception){false} else false
 
     // ── State ────────────────────────────────────────────────────────
-    private var currentSub = "popular"; private var currentSort = "hot"; private var after = ""
+    private var currentSub = "popular"; private var currentSort = "hot"; @Volatile private var after = ""
     private var lastAfter = ""; @Volatile private var isLoading = false; private var isInComments = false
     private var isInMenu = true; private var currentPostId = ""; private var currentPostSub = ""
     private val postIds = HashSet<String>(); private var accessToken = ""
