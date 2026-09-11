@@ -22,6 +22,9 @@
 #include <optional>
 #include <string>
 
+#include "common/uri_string.h"
+#include "network/image_hosts/imgur_api.h"
+
 namespace PinkReader {
 
 // ============================================================================
@@ -29,14 +32,12 @@ namespace PinkReader {
 // ============================================================================
 
 class RRError;
-class UriString;
 class Context;
 class CacheManager;
 class CacheRequest;
 class TimestampUTC;
 
 // Forward: GetImageInfoListener (defined in imgur_api.h or image_imgur_api.h)
-class GetImageInfoListener;
 
 // ============================================================================
 // GfycatAPI — port of public final class GfycatAPI (Java line 42)

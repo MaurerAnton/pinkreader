@@ -10,6 +10,9 @@
  */
 
 #include "network/image_hosts/gfycat_api.h"
+#include "cache/download_strategy_if_not_cached.h"
+#include "cache/cache_request_json_parser.h"
+#include "utils/priority.h"
 #include "accounts/reddit_account_manager.h"
 #include "cache/cache_manager.h"
 #include "cache/cache_request.h"
@@ -30,126 +33,6 @@
 
 namespace PinkReader {
 
-// ============================================================================
-// Stub classes for types not yet fully ported
-// ============================================================================
-
-class FailedRequestBody {
-public:
-    explicit FailedRequestBody(const QJsonValue &result) : m_result(result) {}
-    const QJsonValue &result() const { return m_result; }
-private:
-    QJsonValue m_result;
-};
-
-class JsonObject {
-public:
-    explicit JsonObject(const QJsonObject &obj) : m_obj(obj) {}
-    QJsonObject getObject(const QString &key) const {
-        return m_obj.value(key).toObject();
-    }
-private:
-    QJsonObject m_obj;
-};
-
-class JsonValue {
-public:
-    explicit JsonValue(const QJsonDocument &doc) : m_doc(doc) {}
-    JsonObject asObject() const { return JsonObject(m_doc.object()); }
-private:
-    QJsonDocument m_doc;
-};
-
-// ============================================================================
-// ImageInfo stub — port of org.quantumbadger.redreader.image.ImageInfo.parseGfycat
-// ============================================================================
-
-class ImageInfo {
-public:
-    // Port of: ImageInfo.parseGfycat(outer) (Java GfycatAPI line 70)
-    static ImageInfo parseGfycat(const JsonObject &outer) {
-        // Full implementation requires ImageInfo.kt port
-        (void)outer;
-        throw std::runtime_error("ImageInfo::parseGfycat not yet ported");
-    }
-};
-
-// ============================================================================
-// CacheRequestJSONParser — port of inner class pattern
-//
-// Port of: org.quantumbadger.redreader.cache.CacheRequestJSONParser
-//
-// This is a CacheRequestCallbacks implementation that:
-//   - onDataStreamComplete: parses the stream as JSON,
-//     calls onJsonParsed callback
-//   - onFailure: calls onFailure callback
-// ============================================================================
-
-class CacheRequestJSONParser : public CacheRequestCallbacks {
-public:
-    // Port of: CacheRequestJSONParser.Listener interface
-    class Listener {
-    public:
-        virtual ~Listener() = default;
-
-        // Port of: void onJsonParsed(JsonValue, TimestampUTC, UUID, boolean)
-        virtual void onJsonParsed(
-                const JsonValue &result,
-                const TimestampUTC &timestamp,
-                const QUuid &session,
-                bool fromCache) = 0;
-
-        // Port of: void onFailure(RRError)
-        virtual void onFailure(const RRError &error) = 0;
-    };
-
-    // Port of: CacheRequestJSONParser(Context, Listener)
-    CacheRequestJSONParser(Context &context, Listener &listener)
-        : m_context(context)
-        , m_listener(listener) {}
-
-    // Port of: onDataStreamComplete (from CacheRequestCallbacks)
-    void onDataStreamComplete(
-            const GenericFactory<QByteArray> &streamFactory,
-            const TimestampUTC &timestamp,
-            const QUuid &session,
-            bool fromCache,
-            const std::optional<QString> &mimetype) override {
-        (void)mimetype;
-        try {
-            QByteArray data = streamFactory.create();
-            QJsonParseError parseError;
-            QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-
-            if (parseError.error != QJsonParseError::NoError) {
-                throw std::runtime_error(
-                    "JSON parse error: " + parseError.errorString().toStdString());
-            }
-
-            JsonValue result(doc);
-            m_listener.onJsonParsed(result, timestamp, session, fromCache);
-        } catch (const std::exception &t) {
-            RRError error = General::getGeneralErrorForFailure(
-                General::RequestFailureType::PARSE,
-                QString::fromStdString(t.what()),
-                -1,
-                m_apiUrl);
-            m_listener.onFailure(error);
-        }
-    }
-
-    // Port of: onFailure (from CacheRequestCallbacks)
-    void onFailure(const RRError &error) override {
-        m_listener.onFailure(error);
-    }
-
-    void setApiUrl(const UriString &url) { m_apiUrl = url; }
-
-private:
-    Context &m_context;
-    Listener &m_listener;
-    UriString m_apiUrl;
-};
 
 // ============================================================================
 // getImageInfo — port of Java static method (Java lines 44-87)
@@ -170,6 +53,9 @@ void GfycatAPI::getImageInfo(
 
     // Create the JSON parser listener (anonymous inner class in Java)
     // Port of: new CacheRequestJSONParser.Listener() { ... } (Java lines 61-87)
+    // Implements the REAL CacheRequestJSONParser::Listener. Gfycat image
+    // parsing itself is not yet ported, so a successful fetch currently
+    // reports "not yet ported" through the failure path.
     class GfycatParserListener : public CacheRequestJSONParser::Listener {
     public:
         GfycatParserListener(
@@ -184,26 +70,23 @@ void GfycatAPI::getImageInfo(
         void onJsonParsed(
                 const JsonValue &result,
                 const TimestampUTC &timestamp,
-                const QUuid &session,
+                const UUID &session,
                 bool fromCache) override {
+            (void)result;
             (void)timestamp;
             (void)session;
             (void)fromCache;
             try {
-                // Port of: final JsonObject outer = result.asObject()
-                //     .getObject("gfyItem"); (Java line 69)
-                const JsonObject outer = result.asObject().getObject("gfyItem");
-
                 // Port of: listener.onSuccess(ImageInfo.parseGfycat(outer));
-                // (Java line 70)
-                m_listener.onSuccess(ImageInfo::parseGfycat(outer));
+                // (Java line 70) — needs the ImageInfo model port.
+                throw std::runtime_error("ImageInfo::parseGfycat not yet ported");
             } catch (const std::exception &t) {
                 // Port of: catch(final Throwable t) { ... } (Java lines 72-79)
                 RRError error = General::getGeneralErrorForFailure(
                     General::RequestFailureType::PARSE,
                     QString::fromStdString(t.what()),
                     -1,
-                    m_apiUrl);
+                    m_apiUrl.value());
                 m_listener.onFailure(error);
             }
         }
@@ -221,8 +104,8 @@ void GfycatAPI::getImageInfo(
 
     GfycatParserListener parserListener(context, apiUrl, listener);
 
-    CacheRequestJSONParser jsonParser(context, parserListener);
-    jsonParser.setApiUrl(apiUrl);
+    // Real CacheRequestJSONParser (takes an opaque context pointer)
+    CacheRequestJSONParser jsonParser(static_cast<void *>(&context), parserListener);
 
     // Build CacheRequest
     // Port of: new CacheRequest(apiUrl, RedditAccountManager.getAnon(), null, priority,
@@ -232,10 +115,10 @@ void GfycatAPI::getImageInfo(
     const RedditAccount &anonAccount = RedditAccountManager::getAnon();
 
     CacheRequest request(
-        apiUrl,
+        apiUrl.value(),
         anonAccount,
         std::nullopt,
-        priority,
+        Priority(priority),
         DownloadStrategyIfNotCached::INSTANCE,
         FileType::IMAGE_INFO,
         CacheRequest::DownloadQueueType::IMMEDIATE,

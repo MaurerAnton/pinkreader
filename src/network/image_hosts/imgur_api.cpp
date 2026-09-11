@@ -11,6 +11,8 @@
 
 #include "network/image_hosts/imgur_api.h"
 #include "cache/download_strategy_if_not_cached.h"
+#include "cache/cache_request_json_parser.h"
+#include "utils/priority.h"
 #include "accounts/reddit_account_manager.h"
 #include "cache/cache_manager.h"
 #include "cache/cache_request.h"
@@ -31,142 +33,6 @@
 
 namespace PinkReader {
 
-// Forward declarations for types not yet fully ported
-class FailedRequestBody {
-public:
-    explicit FailedRequestBody(const QJsonValue &result) : m_result(result) {}
-    const QJsonValue &result() const { return m_result; }
-private:
-    QJsonValue m_result;
-};
-
-class JsonObject {
-public:
-    explicit JsonObject(const QJsonObject &obj) : m_obj(obj) {}
-    JsonObject getObject(const QString &key) const {
-        return JsonObject(m_obj.value(key).toObject());
-    }
-private:
-    QJsonObject m_obj;
-};
-
-class JsonValue {
-public:
-    explicit JsonValue(const QJsonDocument &doc) : m_doc(doc) {}
-    JsonObject asObject() const { return JsonObject(m_doc.object()); }
-private:
-    QJsonDocument m_doc;
-};
-
-// ============================================================================
-// AlbumInfo stub — full port would be in models/
-// Port of: org.quantumbadger.redreader.image.AlbumInfo.parseImgur
-// ============================================================================
-
-class AlbumInfo {
-public:
-    static AlbumInfo parseImgur(const UriString &albumUrl, const JsonObject &outer) {
-        // Port of: AlbumInfo.parseImgur(url, outer) (Java ImgurAPI line 76)
-        // Full implementation requires AlbumInfo.kt port
-        // Stub: throws to indicate not yet implemented
-        (void)albumUrl;
-        (void)outer;
-        throw std::runtime_error("AlbumInfo::parseImgur not yet ported");
-    }
-};
-
-// ============================================================================
-// ImageInfo stub — full port would be in models/
-// Port of: org.quantumbadger.redreader.image.ImageInfo.parseImgur
-// ============================================================================
-
-class ImageInfo {
-public:
-    static ImageInfo parseImgur(const JsonObject &outer) {
-        // Port of: ImageInfo.parseImgur(outer) (Java ImgurAPI line 124)
-        // Full implementation requires ImageInfo.kt port
-        (void)outer;
-        throw std::runtime_error("ImageInfo::parseImgur not yet ported");
-    }
-};
-
-// ============================================================================
-// CacheRequestJSONParser — port of inner class pattern
-// Port of: org.quantumbadger.redreader.cache.CacheRequestJSONParser
-//
-// This is a CacheRequestCallbacks implementation that:
-//   - onDataStreamComplete: parses the stream as JSON,
-//     calls onJsonParsed callback
-//   - onFailure: calls onFailure callback
-// ============================================================================
-
-class CacheRequestJSONParser : public CacheRequestCallbacks {
-public:
-    // Port of: CacheRequestJSONParser.Listener interface
-    class Listener {
-    public:
-        virtual ~Listener() = default;
-
-        // Port of: void onJsonParsed(JsonValue, TimestampUTC, UUID, boolean)
-        virtual void onJsonParsed(
-                const JsonValue &result,
-                const TimestampUTC &timestamp,
-                const QUuid &session,
-                bool fromCache) = 0;
-
-        // Port of: void onFailure(RRError)
-        virtual void onFailure(const RRError &error) = 0;
-    };
-
-    // Port of: CacheRequestJSONParser(Context, Listener) (Java ImgurAPI line 63-64)
-    CacheRequestJSONParser(Context &context, Listener &listener)
-        : m_context(context)
-        , m_listener(listener) {}
-
-    // Port of: onDataStreamComplete (from CacheRequestCallbacks)
-    void onDataStreamComplete(
-            const GenericFactory<QByteArray> &streamFactory,
-            const TimestampUTC &timestamp,
-            const QUuid &session,
-            bool fromCache,
-            const std::optional<QString> &mimetype) override {
-        try {
-            // Read the stream and parse as JSON
-            QByteArray data = streamFactory.create();
-            QJsonParseError parseError;
-            QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-
-            if (parseError.error != QJsonParseError::NoError) {
-                throw std::runtime_error(
-                    "JSON parse error: " + parseError.errorString().toStdString());
-            }
-
-            JsonValue result(doc);
-            m_listener.onJsonParsed(result, timestamp, session, fromCache);
-        } catch (const std::exception &t) {
-            // Port of: catch(Throwable t) block (Java ImgurAPI lines 78-86)
-            RRError error = General::getGeneralErrorForFailure(
-                General::RequestFailureType::PARSE,
-                QString::fromStdString(t.what()),
-                -1,
-                m_apiUrl);
-            m_listener.onFailure(error);
-        }
-    }
-
-    // Port of: onFailure (from CacheRequestCallbacks) (Java ImgurAPI line 90-92)
-    void onFailure(const RRError &error) override {
-        m_listener.onFailure(error);
-    }
-
-    // Store the API URL for error reporting
-    void setApiUrl(const QString &url) { m_apiUrl = url; }
-
-private:
-    Context &m_context;
-    Listener &m_listener;
-    QString m_apiUrl;
-};
 
 // ============================================================================
 // getAlbumInfo — port of Java static method (Java lines 44-93)
@@ -188,6 +54,10 @@ void ImgurAPI::getAlbumInfo(
 
     // Create the JSON parser listener (anonymous inner class in Java)
     // Port of: new CacheRequestJSONParser.Listener() { ... } (Java lines 65-87)
+    // Implements the REAL CacheRequestJSONParser::Listener (cache/). Album
+    // parsing itself is not yet ported, so a successful fetch currently
+    // reports "not yet ported" through the failure path (same as before,
+    // when AlbumInfo::parseImgur threw unconditionally).
     class AlbumParserListener : public CacheRequestJSONParser::Listener {
     public:
         AlbumParserListener(
@@ -204,23 +74,23 @@ void ImgurAPI::getAlbumInfo(
         void onJsonParsed(
                 const JsonValue &result,
                 const TimestampUTC &timestamp,
-                const QUuid &session,
+                const UUID &session,
                 bool fromCache) override {
+            (void)result;
+            (void)timestamp;
+            (void)session;
+            (void)fromCache;
             try {
-                // Port of: final JsonObject outer = result.asObject()
-                //     .getObject("album"); (Java line 75)
-                const JsonObject outer = result.asObject().getObject("album");
-
-                // Port of: listener.onSuccess(AlbumInfo.parseImgur(albumUrl, outer));
-                // (Java line 76)
-                m_listener.onSuccess(AlbumInfo::parseImgur(m_albumUrl, outer));
+                // Port of: listener.onSuccess(AlbumInfo.parseImgur(m_albumUrl, outer));
+                // (Java line 76) — AlbumInfo parsing needs the model port.
+                throw std::runtime_error("AlbumInfo::parseImgur not yet ported");
             } catch (const std::exception &t) {
                 // Port of: catch(final Throwable t) { ... } (Java lines 78-86)
                 RRError error = General::getGeneralErrorForFailure(
                     General::RequestFailureType::PARSE,
                     QString::fromStdString(t.what()),
                     -1,
-                    m_apiUrl);
+                    m_apiUrl.value());
                 m_listener.onFailure(error);
             }
         }
@@ -239,9 +109,8 @@ void ImgurAPI::getAlbumInfo(
 
     AlbumParserListener parserListener(context, albumUrl, apiUrl, listener);
 
-    // Create the JSON parser wrapper
-    CacheRequestJSONParser jsonParser(context, parserListener);
-    jsonParser.setApiUrl(apiUrl);
+    // Create the JSON parser wrapper (real CacheRequestJSONParser)
+    CacheRequestJSONParser jsonParser(static_cast<void *>(&context), parserListener);
 
     // Port of: CacheRequest request = new CacheRequest(
     //     apiUrl, RedditAccountManager.getAnon(), null, priority,
@@ -253,10 +122,10 @@ void ImgurAPI::getAlbumInfo(
     const RedditAccount &anonAccount = RedditAccountManager::getAnon();
 
     CacheRequest request(
-        apiUrl,                             // url
+        apiUrl.value(),                     // url
         anonAccount,                        // user (anonymous)
         std::nullopt,                       // requestSession (null)
-        priority,                           // priority
+        Priority(priority),                 // priority
         DownloadStrategyIfNotCached::INSTANCE,  // downloadStrategy
         FileType::IMAGE_INFO,               // fileType
         CacheRequest::DownloadQueueType::IMMEDIATE,  // queueType
@@ -285,6 +154,9 @@ void ImgurAPI::getImageInfo(
 
     // Create the JSON parser listener (anonymous inner class in Java)
     // Port of: new CacheRequestJSONParser.Listener() { ... } (Java lines 114-141)
+    // Implements the REAL CacheRequestJSONParser::Listener. Image parsing
+    // itself is not yet ported, so a successful fetch currently reports
+    // "not yet ported" through the failure path.
     class ImageParserListener : public CacheRequestJSONParser::Listener {
     public:
         ImageParserListener(
@@ -299,23 +171,23 @@ void ImgurAPI::getImageInfo(
         void onJsonParsed(
                 const JsonValue &result,
                 const TimestampUTC &timestamp,
-                const QUuid &session,
+                const UUID &session,
                 bool fromCache) override {
+            (void)result;
+            (void)timestamp;
+            (void)session;
+            (void)fromCache;
             try {
-                // Port of: final JsonObject outer = result.asObject()
-                //     .getObject("image"); (Java line 123)
-                const JsonObject outer = result.asObject().getObject("image");
-
                 // Port of: listener.onSuccess(ImageInfo.parseImgur(outer));
-                // (Java line 124)
-                m_listener.onSuccess(ImageInfo::parseImgur(outer));
+                // (Java line 124) — ImageInfo parsing needs the model port.
+                throw std::runtime_error("ImageInfo::parseImgur not yet ported");
             } catch (const std::exception &t) {
                 // Port of: catch(final Throwable t) { ... } (Java lines 126-134)
                 RRError error = General::getGeneralErrorForFailure(
                     General::RequestFailureType::PARSE,
                     QString::fromStdString(t.what()),
                     -1,
-                    m_apiUrl);
+                    m_apiUrl.value());
                 m_listener.onFailure(error);
             }
         }
@@ -333,18 +205,17 @@ void ImgurAPI::getImageInfo(
 
     ImageParserListener parserListener(context, apiUrl, listener);
 
-    // Create the JSON parser wrapper
-    CacheRequestJSONParser jsonParser(context, parserListener);
-    jsonParser.setApiUrl(apiUrl);
+    // Create the JSON parser wrapper (real CacheRequestJSONParser)
+    CacheRequestJSONParser jsonParser(static_cast<void *>(&context), parserListener);
 
     // Build CacheRequest
     const RedditAccount &anonAccount = RedditAccountManager::getAnon();
 
     CacheRequest request(
-        apiUrl,                             // url
+        apiUrl.value(),                     // url
         anonAccount,                        // user (anonymous)
         std::nullopt,                       // requestSession (null)
-        priority,                           // priority
+        Priority(priority),                 // priority
         DownloadStrategyIfNotCached::INSTANCE,  // downloadStrategy
         FileType::IMAGE_INFO,               // fileType
         CacheRequest::DownloadQueueType::IMMEDIATE,  // queueType
