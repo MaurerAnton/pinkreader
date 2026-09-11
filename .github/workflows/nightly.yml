@@ -5,6 +5,12 @@ on:
     - cron: '0 2 * * *'  # Run at 2 AM UTC daily
   workflow_dispatch:
 
+# The tag push at the end needs write access. Without this, scheduled
+# runs use a read-only token and `git push -f origin nightly` fails
+# with 403 (this is what broke every nightly Jul 21-25).
+permissions:
+  contents: write
+
 jobs:
   nightly:
     name: "Nightly Build"
@@ -24,19 +30,33 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build nightly APK
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Accept Android SDK licenses
         run: |
-          echo "Building nightly APK..."
-          echo "Build date: ${{ env.BUILD_DATE }}"
-          echo "Build datetime: ${{ env.BUILD_DATETIME }}"
-          # Build commands would go here
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+
+      - name: Install Android SDK components
+        run: |
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;27.0.12077973" \
+            "cmake;3.22.1" \
+            "platform-tools" \
+            2>&1 | tail -5
+
+      - name: Build nightly APK
+        run: gradle assembleDebug --no-daemon
 
       - name: Upload nightly APK
         uses: actions/upload-artifact@v4
         with:
           name: PinkReader-nightly-${{ env.BUILD_DATE }}
-          path: build/outputs/apk/**/*.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
+          if-no-files-found: error
 
       - name: Create nightly tag
         run: |
