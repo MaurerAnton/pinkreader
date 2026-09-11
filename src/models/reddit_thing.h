@@ -81,17 +81,10 @@ public:
     // ========================================================================
     Kind getKind() const;
 
-    // ========================================================================
-    // asSubreddit (Java lines 63-69)
-    // Throws on deserialization failure.
-    // ========================================================================
-    RedditSubreddit asSubreddit() const;
-
-    // ========================================================================
-    // asUser (Java lines 71-77)
-    // Throws on deserialization failure.
-    // ========================================================================
-    RedditUser asUser() const;
+    // NOTE: asSubreddit/asUser (Java lines 63-77) are intentionally absent:
+    // they rely on Java reflection (JsonObject.asObject(Class)). The only
+    // callers are commented out (reddit_api.cpp). Restore them when the
+    // reddit/ tree is wired into the build.
 
 private:
     // ========================================================================
