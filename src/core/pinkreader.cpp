@@ -37,7 +37,6 @@
 #include "accounts/account_manager.h"
 #include "accounts/account.h"
 #include "cache/cache_manager.h"
-#include "reddit/reddit_api.h"
 #include "reddit/api/reddit_oauth.h"
 #include "network/network_monitor.h"
 #include "settings/preferences.h"
@@ -163,7 +162,7 @@ void PinkReaderApp::shutdown()
 
     m_oauth = nullptr;
 
-    delete m_cacheManager;
+    // Singleton owned by CacheManager itself; just drop our reference.
     m_cacheManager = nullptr;
 
     delete m_accountManager;
@@ -348,10 +347,8 @@ void PinkReaderApp::setupCacheServices()
     // Initialize the cache system
     QString cachePath = QStandardPaths::writableLocation(
         QStandardPaths::CacheLocation);
-    m_cacheManager = new CacheManager(cachePath);
-    if (m_cacheManager == nullptr) {
-        Logging::error("PinkReaderApp", "Failed to initialize cache system!");
-    }
+    CacheManager::initialize(cachePath);
+    m_cacheManager = &CacheManager::getInstance();
 
     Logging::debug("PinkReaderApp", "Cache services initialized");
 }

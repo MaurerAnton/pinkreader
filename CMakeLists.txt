@@ -366,6 +366,7 @@ set(HEADERS
     src/utils/deep_link_handler.h
     src/utils/backup_manager.h
     src/utils/intent_handler.h
+    src/utils/priority.h
 )
 
 set(RESOURCES

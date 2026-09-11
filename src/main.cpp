@@ -405,7 +405,7 @@ int main(int argc, char *argv[])
     pinkReaderApp.initialize();
 
     // Get and show the main window
-    MainWindow *mainWindow = pinkReaderApp.mainWindow();
+    PinkReader::MainWindow *mainWindow = pinkReaderApp.mainWindow();
     if (mainWindow) {
         // Restore window geometry from saved preferences
         QByteArray savedGeometry = PinkReader::Preferences::instance()
@@ -427,12 +427,11 @@ int main(int argc, char *argv[])
     // On desktop, this runs until the last window is closed
     int result = app.exec();
 
-    // Save window geometry and state before exit
+    // Save window geometry before exit (MainWindow is a plain QWidget:
+    // no toolbar/dock state to persist, unlike QMainWindow)
     if (mainWindow) {
         PinkReader::Preferences::instance().setByteArray(
             "window_geometry", mainWindow->saveGeometry());
-        PinkReader::Preferences::instance().setByteArray(
-            "window_state", mainWindow->saveState());
     }
 
     // Save preferences to persistent storage
