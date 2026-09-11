@@ -215,7 +215,7 @@ public:
 
 private:
     QVector<std::weak_ptr<E>> m_data;
-    QMutex m_mutex;
+    mutable QMutex m_mutex;
 };
 
 // ========================================================================
@@ -496,7 +496,7 @@ private:
     QHash<K, CacheEntry> m_cached;
     CacheDataSource<K, V, F> &m_cacheDataSource;
     UpdatedVersionListenerNotifier<K, V> m_updatedVersionListenerNotifier;
-    QMutex m_mutex;
+    mutable QMutex m_mutex;
 };
 
 } // namespace PinkReader
