@@ -7,6 +7,7 @@
  */
 
 #include "models/reddit_thing.h"
+#include "jsonwrap/json_object.h"
 #include "models/reddit_subreddit.h"
 #include "models/reddit_user.h"
 
