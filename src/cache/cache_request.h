@@ -16,12 +16,13 @@
 #include <memory>
 #include <optional>
 
+#include "http/http_request_body.h"
+
 namespace PinkReader {
 
 class RedditAccount;
 class Priority;
 class DownloadStrategy;
-#include "http/http_request_body.h"
 class CacheDownload;
 class CacheManager;
 class RRError;
