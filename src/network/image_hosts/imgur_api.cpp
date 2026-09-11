@@ -11,7 +11,6 @@
 
 #include "network/image_hosts/imgur_api.h"
 #include "cache/download_strategy_if_not_cached.h"
-#include "cache/cache_request_json_parser.h"
 #include "utils/priority.h"
 #include "accounts/reddit_account_manager.h"
 #include "cache/cache_manager.h"
@@ -32,6 +31,105 @@
 #include <string>
 
 namespace PinkReader {
+
+// ============================================================================
+// Local JSON helpers (value semantics matching the call sites below).
+// NOTE: these intentionally shadow nothing — the jsonwrap types are
+// pointer-based and live in other TUs; these file-local helpers keep the
+// ported call chains (`result.asObject().getObject(..)`) compiling.
+// ============================================================================
+
+class JsonObject {
+public:
+    explicit JsonObject(const QJsonObject &obj) : m_obj(obj) {}
+    JsonObject getObject(const QString &key) const {
+        return JsonObject(m_obj.value(key).toObject());
+    }
+private:
+    QJsonObject m_obj;
+};
+
+class JsonValue {
+public:
+    explicit JsonValue(const QJsonDocument &doc) : m_doc(doc) {}
+    JsonObject asObject() const { return JsonObject(m_doc.object()); }
+private:
+    QJsonDocument m_doc;
+};
+
+// ============================================================================
+// CacheRequestJSONParser — local Qt-style implementation for this TU.
+// (The cache/ namesake uses different callback types; this one matches the
+// Qt-style CacheRequestCallbacks that CacheRequest::CacheRequest takes.)
+// ============================================================================
+
+class CacheRequestJSONParser : public CacheRequestCallbacks {
+public:
+    // Port of: CacheRequestJSONParser.Listener interface
+    class Listener {
+    public:
+        virtual ~Listener() = default;
+
+        // Port of: void onJsonParsed(JsonValue, TimestampUTC, UUID, boolean)
+        virtual void onJsonParsed(
+                const JsonValue &result,
+                const TimestampUTC &timestamp,
+                const QUuid &session,
+                bool fromCache) = 0;
+
+        // Port of: void onFailure(RRError)
+        virtual void onFailure(const RRError &error) = 0;
+    };
+
+    // Port of: CacheRequestJSONParser(Context, Listener)
+    CacheRequestJSONParser(Context &context, Listener &listener)
+        : m_context(context)
+        , m_listener(listener) {}
+
+    // Port of: onDataStreamComplete (from CacheRequestCallbacks)
+    void onDataStreamComplete(
+            const GenericFactory<QByteArray> &streamFactory,
+            const TimestampUTC &timestamp,
+            const QUuid &session,
+            bool fromCache,
+            const std::optional<QString> &mimetype) override {
+        try {
+            // Read the stream and parse as JSON
+            QByteArray data = streamFactory.create();
+            QJsonParseError parseError;
+            QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
+
+            if (parseError.error != QJsonParseError::NoError) {
+                throw std::runtime_error(
+                    "JSON parse error: " + parseError.errorString().toStdString());
+            }
+
+            JsonValue result(doc);
+            m_listener.onJsonParsed(result, timestamp, session, fromCache);
+        } catch (const std::exception &t) {
+            // Port of: catch(Throwable t) block
+            RRError error = General::getGeneralErrorForFailure(
+                General::RequestFailureType::PARSE,
+                QString::fromStdString(t.what()),
+                -1,
+                m_apiUrl);
+            m_listener.onFailure(error);
+        }
+    }
+
+    // Port of: onFailure (from CacheRequestCallbacks)
+    void onFailure(const RRError &error) override {
+        m_listener.onFailure(error);
+    }
+
+    // Store the API URL for error reporting
+    void setApiUrl(const QString &url) { m_apiUrl = url; }
+
+private:
+    Context &m_context;
+    Listener &m_listener;
+    QString m_apiUrl;
+};
 
 
 // ============================================================================
@@ -74,7 +172,7 @@ void ImgurAPI::getAlbumInfo(
         void onJsonParsed(
                 const JsonValue &result,
                 const TimestampUTC &timestamp,
-                const UUID &session,
+                const QUuid &session,
                 bool fromCache) override {
             (void)result;
             (void)timestamp;
@@ -109,8 +207,9 @@ void ImgurAPI::getAlbumInfo(
 
     AlbumParserListener parserListener(context, albumUrl, apiUrl, listener);
 
-    // Create the JSON parser wrapper (real CacheRequestJSONParser)
-    CacheRequestJSONParser jsonParser(static_cast<void *>(&context), parserListener);
+    // Create the JSON parser wrapper
+    CacheRequestJSONParser jsonParser(context, parserListener);
+    jsonParser.setApiUrl(apiUrl.value());
 
     // Port of: CacheRequest request = new CacheRequest(
     //     apiUrl, RedditAccountManager.getAnon(), null, priority,
@@ -171,7 +270,7 @@ void ImgurAPI::getImageInfo(
         void onJsonParsed(
                 const JsonValue &result,
                 const TimestampUTC &timestamp,
-                const UUID &session,
+                const QUuid &session,
                 bool fromCache) override {
             (void)result;
             (void)timestamp;
@@ -205,8 +304,9 @@ void ImgurAPI::getImageInfo(
 
     ImageParserListener parserListener(context, apiUrl, listener);
 
-    // Create the JSON parser wrapper (real CacheRequestJSONParser)
-    CacheRequestJSONParser jsonParser(static_cast<void *>(&context), parserListener);
+    // Create the JSON parser wrapper
+    CacheRequestJSONParser jsonParser(context, parserListener);
+    jsonParser.setApiUrl(apiUrl.value());
 
     // Build CacheRequest
     const RedditAccount &anonAccount = RedditAccountManager::getAnon();
