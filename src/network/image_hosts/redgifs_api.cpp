@@ -114,7 +114,7 @@ public:
                 General::RequestFailureType::PARSE,
                 QString::fromStdString(t.what()),
                 -1,
-                m_apiUrl.value());
+                m_apiUrl);
             m_listener.onFailure(error);
         }
     }

@@ -28,8 +28,11 @@ class CacheManager;
 class RRError;
 
 // Forward: SeekableInputStream factory (defined in cache_request_callbacks.h;
-// two params to match the canonical template)
-template<typename T, typename E>
+// two params to match the canonical template; default repeated here so the
+// 1-arg uses below compile without pulling in that header — which defines
+// a different CacheRequestCallbacks and must stay out of this TU)
+#include <stdexcept>
+template<typename T, typename E = std::exception>
 class GenericFactory;
 
 // Forward: TimestampUTC
