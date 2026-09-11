@@ -72,12 +72,14 @@ private:
 };
 
 // ============================================================================
-// GenericFactory — simple factory returning T
-// Port of org.quantumbadger.redreader.common.GenericFactory
+// LambdaFactory — simple concrete factory returning T.
+// (The upstream GenericFactory interface lives in
+// cache_request_callbacks.h; this concrete helper keeps a distinct name
+// so the two never collide.)
 // ============================================================================
 
 template<typename T, typename E = std::exception>
-class GenericFactory {
+class LambdaFactory {
 public:
     using FactoryFunc = std::function<T()>;
     explicit GenericFactory(FactoryFunc func) : m_func(std::move(func)) {}

@@ -51,7 +51,7 @@ class SubredditPostListURL;
 class SearchPostListURL;
 class PostCommentListingURL;
 class CommentListingController;
-template<typename T> class GenericFactory;
+template<typename T, typename E> class GenericFactory;
 template<typename T> class MaybeParseError;
 class SeekableInputStream;
 class FailedRequestBody;

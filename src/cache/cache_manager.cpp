@@ -890,7 +890,7 @@ void CacheManager::RequestHandlerThread::handleCacheEntryFound(
     // The task reads the cache file and notifies the request
     // For now, we just deliver the cached data directly
 
-    auto streamFactory = GenericFactory<QByteArray>([this, &entry]() {
+    auto streamFactory = LambdaFactory<QByteArray>([this, &entry]() {
         auto stream = m_manager.getCacheFileInputStream(entry.id, entry.cacheCompressionType);
         if (!stream.has_value()) {
             // TODO: m_manager.m_dbManager->delete(entry.id);

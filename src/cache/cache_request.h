@@ -27,8 +27,9 @@ class CacheDownload;
 class CacheManager;
 class RRError;
 
-// Forward: SeekableInputStream factory
-template<typename T>
+// Forward: SeekableInputStream factory (defined in cache_request_callbacks.h;
+// two params to match the canonical template)
+template<typename T, typename E>
 class GenericFactory;
 
 // Forward: TimestampUTC

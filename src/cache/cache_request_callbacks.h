@@ -15,7 +15,7 @@ class SeekableInputStream;
 class TimestampUTC;
 class UUID;
 
-template<typename T, typename E>
+template<typename T, typename E = std::exception>
 class GenericFactory {
 public:
 	virtual ~GenericFactory() = default;
