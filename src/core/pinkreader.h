@@ -23,7 +23,6 @@
 #pragma once
 
 #include <QObject>
-#include <QMainWindow>
 #include <QStackedWidget>
 #include <QMap>
 #include <QString>
@@ -68,7 +67,7 @@ public:
     void initialize();
     void shutdown();
 
-    QMainWindow *mainWindow() const;
+    MainWindow *mainWindow() const;
     MainMenu *mainMenu() const;
 
     // Navigation
@@ -86,7 +85,6 @@ public:
     // Accessors
     AccountManager *accountManager() const;
     CacheManager *cacheManager() const;
-    RedditAPI *redditAPI() const;
     Preferences *preferences() const;
     NotificationManager *notificationManager() const;
     DraftManager *draftManager() const;
@@ -107,7 +105,7 @@ private:
 
     static PinkReaderApp *s_instance;
 
-    QMainWindow *m_mainWindow = nullptr;
+    MainWindow *m_mainWindow = nullptr;
     MainMenu *m_mainMenu = nullptr;
 
     // Core services
@@ -119,7 +117,6 @@ private:
     BackupManager *m_backupManager = nullptr;
 
     // Network services
-    RedditAPI *m_redditAPI = nullptr;
     RedditOAuth *m_oauth = nullptr;
     NetworkMonitor *m_networkMonitor = nullptr;
 

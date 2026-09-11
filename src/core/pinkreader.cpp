@@ -23,6 +23,7 @@
 #include "core/pinkreader.h"
 #include "core/application.h"
 #include "core/constants.h"
+#include "core/offline_detector.hpp"
 #include "core/version.h"
 #include "ui/main_window.h"
 #include "ui/main_menu.h"
@@ -36,8 +37,8 @@
 #include "accounts/account_manager.h"
 #include "accounts/account.h"
 #include "cache/cache_manager.h"
-#include "network/reddit_api.h"
-#include "network/reddit_oauth.h"
+#include "reddit/reddit_api.h"
+#include "reddit/api/reddit_oauth.h"
 #include "network/network_monitor.h"
 #include "settings/preferences.h"
 #include "settings/theme_manager.h"
@@ -160,11 +161,7 @@ void PinkReaderApp::shutdown()
     delete m_networkMonitor;
     m_networkMonitor = nullptr;
 
-    delete m_oauth;
     m_oauth = nullptr;
-
-    delete m_redditAPI;
-    m_redditAPI = nullptr;
 
     delete m_cacheManager;
     m_cacheManager = nullptr;
@@ -214,8 +211,10 @@ void PinkReaderApp::navigateToSettings()
     Logging::info("PinkReaderApp", "Navigating to settings");
     auto *settings = new SettingsWindow(m_mainWindow);
     if (settings) {
-        settings->exec();
-        settings->deleteLater();
+        settings->setAttribute(Qt::WA_DeleteOnClose);
+        settings->show();
+        settings->raise();
+        settings->activateWindow();
     }
 }
 
@@ -254,7 +253,7 @@ bool PinkReaderApp::canGoBack() const
 // Accessors
 // ---------------------------------------------------------------------------
 
-QMainWindow *PinkReaderApp::mainWindow() const
+MainWindow *PinkReaderApp::mainWindow() const
 {
     return m_mainWindow;
 }
@@ -272,11 +271,6 @@ AccountManager *PinkReaderApp::accountManager() const
 CacheManager *PinkReaderApp::cacheManager() const
 {
     return m_cacheManager;
-}
-
-RedditAPI *PinkReaderApp::redditAPI() const
-{
-    return m_redditAPI;
 }
 
 Preferences *PinkReaderApp::preferences() const
@@ -336,16 +330,11 @@ void PinkReaderApp::setupNetworkServices()
     // Network monitor - tracks connectivity state (WiFi, mobile, offline)
     m_networkMonitor = new NetworkMonitor(this);
 
-    // OAuth handler - manages Reddit OAuth2 authentication flow
-    m_oauth = new RedditOAuth(this);
+    // OAuth handler - process-wide singleton (RedditOAuth::instance())
+    m_oauth = &RedditOAuth::instance();
 
-    // Reddit API - main interface to the Reddit REST API
-    m_redditAPI = new RedditAPI(m_oauth, this);
-
-    // Configure API with current account
-    if (m_accountManager->currentAccount()) {
-        m_redditAPI->setAccount(m_accountManager->currentAccount());
-    }
+    // Reddit API - static interface; the current account is passed per
+    // call by the callers, so no instance or setAccount is needed.
 
     Logging::debug("PinkReaderApp", "Network services initialized");
 }
@@ -356,12 +345,11 @@ void PinkReaderApp::setupCacheServices()
 
     // Cache manager - manages SQLite database and disk cache
     // for posts, comments, images, and thumbnails
-    m_cacheManager = new CacheManager(this);
-
     // Initialize the cache system
     QString cachePath = QStandardPaths::writableLocation(
         QStandardPaths::CacheLocation);
-    if (!m_cacheManager->initialize(cachePath)) {
+    m_cacheManager = new CacheManager(cachePath);
+    if (m_cacheManager == nullptr) {
         Logging::error("PinkReaderApp", "Failed to initialize cache system!");
     }
 
@@ -380,7 +368,7 @@ void PinkReaderApp::setupUIServices()
 
     // Create the main menu (sidebar navigation)
     m_mainMenu = new MainMenu(m_mainWindow);
-    m_mainWindow->setMainMenu(m_mainMenu);
+    // (parented above; MainWindow has no setMainMenu API)
 
     Logging::debug("PinkReaderApp", "UI services initialized");
 }
@@ -389,16 +377,16 @@ void PinkReaderApp::connectSignals()
 {
     Logging::debug("PinkReaderApp", "Connecting signals...");
 
-    // Network state changes - update cache behavior
-    connect(m_networkMonitor, &NetworkMonitor::connectivityChanged,
-            this, [this](NetworkMonitor::Connectivity state) {
+    // Network state changes - log them (the download queue surfaces
+    // failures itself; there is no cache behavior to switch here)
+    auto *offlineDetector = new OfflineDetector(this);
+    connect(offlineDetector, &OfflineDetector::onlineChanged,
+            this, [](bool online) {
         Logging::info("PinkReaderApp",
-            QString("Network state changed: %1").arg(static_cast<int>(state)));
-        // Update cache download strategy based on connectivity
-        if (m_cacheManager) {
-            m_cacheManager->onConnectivityChanged(state);
-        }
+            QString("Network state changed: %1")
+                .arg(online ? QStringLiteral("online") : QStringLiteral("offline")));
     });
+    offlineDetector->checkNow();
 
     // Account changes - update API
     connect(m_accountManager, &AccountManager::currentAccountChanged,
@@ -406,9 +394,6 @@ void PinkReaderApp::connectSignals()
         Logging::info("PinkReaderApp",
             QString("Account changed: %1")
                 .arg(account ? account->username() : QStringLiteral("(none)")));
-        if (m_redditAPI) {
-            m_redditAPI->setAccount(account);
-        }
     });
 
     // Application lifecycle - foreground/background
@@ -416,10 +401,6 @@ void PinkReaderApp::connectSignals()
     if (app) {
         connect(app, &Application::foregrounded, this, [this]() {
             Logging::debug("PinkReaderApp", "App foregrounded - refreshing...");
-            if (m_redditAPI && m_accountManager->currentAccount()) {
-                // Check for new messages
-                // m_redditAPI->checkInbox(); -- implemented in full version
-            }
         });
 
         connect(app, &Application::backgrounded, this, [this]() {

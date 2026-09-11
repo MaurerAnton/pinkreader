@@ -49,6 +49,12 @@ public:
     void remove(const QString &key);
     QStringList allKeys() const;
 
+    static LayoutManager &instance();
+
+    // Applies handedness/tablet prefs (currently logs the resolved
+    // settings; per-window application happens in the views).
+    void applyLayoutSettings();
+
     // Import/Export
     QJsonObject exportAll() const;
     bool importAll(const QJsonObject &settings);

@@ -65,7 +65,7 @@ private:
     qint64 m_maxSize = 512 * 1024 * 1024;  // 512 MB default
     QMutex m_mutex;
 
-    struct CacheEntry {
+    struct Entry {
         QString key;
         QString filePath;
         qint64 size = 0;
@@ -75,10 +75,10 @@ private:
         int accessCount = 0;
     };
 
-    QVector<CacheEntry> loadIndex();
-    void saveIndex(const QVector<CacheEntry> &entries);
+    QVector<Entry> loadIndex();
+    void saveIndex(const QVector<Entry> &entries);
     QString entryPath(const QString &key) const;
-    void removeEntryFiles(const CacheEntry &entry);
+    void removeEntryFiles(const Entry &entry);
 };
 
 } // namespace PinkReader

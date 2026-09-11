@@ -285,4 +285,17 @@ void LayoutManager::registerDefaults()
         {false, QStringLiteral("Announce comment indent levels")};
 }
 
+LayoutManager &LayoutManager::instance() {
+    static LayoutManager inst;
+    return inst;
+}
+
+void LayoutManager::applyLayoutSettings() {
+    const bool leftHanded = getBool(QStringLiteral("left_handed_mode"), false);
+    const bool twoPane = getBool(QStringLiteral("two_pane_mode"), false);
+    Logging::info("Settings::LayoutManager",
+        QString("Layout settings: leftHanded=%1 twoPane=%2")
+            .arg(leftHanded).arg(twoPane));
+}
+
 } // namespace PinkReader

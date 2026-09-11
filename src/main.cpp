@@ -21,6 +21,7 @@
 
 
 #include "core/application.h"
+#include "ui/main_window.h"
 #include "core/pinkreader.h"
 #include "core/constants.h"
 #include "core/version.h"
@@ -404,20 +405,13 @@ int main(int argc, char *argv[])
     pinkReaderApp.initialize();
 
     // Get and show the main window
-    QMainWindow *mainWindow = pinkReaderApp.mainWindow();
+    MainWindow *mainWindow = pinkReaderApp.mainWindow();
     if (mainWindow) {
         // Restore window geometry from saved preferences
         QByteArray savedGeometry = PinkReader::Preferences::instance()
             .getByteArray("window_geometry");
         if (!savedGeometry.isEmpty()) {
             mainWindow->restoreGeometry(savedGeometry);
-        }
-
-        // Restore window state (toolbar positions, dock widgets, etc.)
-        QByteArray savedState = PinkReader::Preferences::instance()
-            .getByteArray("window_state");
-        if (!savedState.isEmpty()) {
-            mainWindow->restoreState(savedState);
         }
 
         mainWindow->show();

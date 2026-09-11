@@ -97,6 +97,16 @@ inline bool isOctetStream(const QString &mimetype) {
 } // namespace Mime
 
 // ============================================================================
+// Activity request codes (used with onActivityResult)
+// ============================================================================
+
+namespace Constants {
+    constexpr int OAUTH_LOGIN_REQUEST_CODE = 1001;
+    constexpr int IMAGE_PICKER_REQUEST_CODE = 1002;
+    constexpr int FILE_PICKER_REQUEST_CODE = 1003;
+} // namespace Constants
+
+// ============================================================================
 // Reddit — port of Java inner class Constants.Reddit (Java lines 62-236)
 // ============================================================================
 

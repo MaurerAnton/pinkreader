@@ -41,6 +41,7 @@ set(SOURCES
     # Core
     src/main.cpp
     src/core/application.cpp
+    src/core/offline_detector.cpp
     src/core/pinkreader.cpp
     src/core/version.cpp
 
@@ -204,6 +205,7 @@ set(SOURCES
 set(HEADERS
     # Core
     src/core/application.h
+    src/core/offline_detector.hpp
     src/core/pinkreader.h
     src/core/constants.h
     src/core/version.h

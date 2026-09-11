@@ -81,15 +81,28 @@ Application::Application(int &argc, char **argv)
     connect(this, &QApplication::applicationStateChanged,
             this, &Application::onApplicationStateChanged);
 
-    // Monitor system theme changes (light/dark mode switching)
+    // Monitor system theme changes (light/dark mode switching).
+    // QStyleHints::colorScheme needs Qt 6.8+; fall back to the palette
+    // lightness check on older Qt (e.g. Ubuntu 24.04's Qt 6.4).
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
     connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged,
             this, [this]() {
-        bool isDark = QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+        const bool isDark = QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
         Logging::info("Application",
             QString("System theme changed to: %1")
                 .arg(isDark ? QStringLiteral("Dark") : QStringLiteral("Light")));
         emit systemThemeChanged(isDark);
     });
+#else
+    connect(qApp, &QGuiApplication::paletteChanged,
+            this, [this](const QPalette &palette) {
+        const bool isDark = palette.color(QPalette::Window).lightness() < 128;
+        Logging::info("Application",
+            QString("System theme changed to: %1")
+                .arg(isDark ? QStringLiteral("Dark") : QStringLiteral("Light")));
+        emit systemThemeChanged(isDark);
+    });
+#endif
 
     Logging::info("Application", "PinkReader application initialized");
 }
