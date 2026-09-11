@@ -38,7 +38,6 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QWindow>
-#include <QDesktopWidget>
 
 #ifdef Q_OS_ANDROID
 #include <QtAndroidExtras/QtAndroid>

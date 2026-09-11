@@ -8,12 +8,16 @@
 #pragma once
 
 #include <QObject>
+
+#include <QObject>
 #include <QString>
 #include <QVariant>
 #include <QSettings>
 #include <QJsonObject>
 #include <QMutex>
 #include <QFont>
+
+class QApplication;
 
 namespace PinkReader {
 
@@ -48,6 +52,12 @@ public:
     bool contains(const QString &key) const;
     void remove(const QString &key);
     QStringList allKeys() const;
+
+    // Process-wide singleton (used by main()).
+    static ThemeManager &instance();
+
+    // Loads :/themes/<theme>.qss and applies it to the app.
+    void applyCurrentTheme(QApplication *app);
 
     // Import/Export
     QJsonObject exportAll() const;

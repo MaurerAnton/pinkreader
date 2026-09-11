@@ -6,6 +6,9 @@
  */
 
 #include "settings/font_manager.h"
+
+#include <QApplication>
+#include <QFont>
 #include "utils/logging.h"
 
 #include <QDir>
@@ -283,6 +286,31 @@ void FontManager::registerDefaults()
         {48, QStringLiteral("Minimum comment height for accessibility")};
     m_defaults[QStringLiteral("accessibility_announce_indent")] =
         {false, QStringLiteral("Announce comment indent levels")};
+}
+
+FontManager &FontManager::instance() {
+    static FontManager inst;
+    return inst;
+}
+
+void FontManager::applyFontScaling(QApplication *app) {
+    if (app == nullptr) {
+        return;
+    }
+    const int baseSize = 14;
+    const int size = getInt(QStringLiteral("font_size"), baseSize);
+    if (size <= 0) {
+        return;
+    }
+    QFont font = app->font();
+    if (font.pointSize() > 0) {
+        font.setPointSize(size);
+    } else {
+        font.setPointSizeF(font.pointSizeF() > 0.0
+            ? font.pointSizeF() * size / baseSize
+            : static_cast<qreal>(size));
+    }
+    app->setFont(font);
 }
 
 } // namespace PinkReader

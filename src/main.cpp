@@ -41,6 +41,7 @@
 #include <QStyle>
 #include <QStyleFactory>
 #include <QFontDatabase>
+#include <QLibraryInfo>
 #include <QLocale>
 #include <QTranslator>
 #include <QDebug>
