@@ -10,6 +10,7 @@
  */
 
 #include "network/image_hosts/image_imgur_api.h"
+#include "cache/download_strategy_if_not_cached.h"
 #include "accounts/reddit_account_manager.h"
 #include "cache/cache_manager.h"
 #include "cache/cache_request.h"

@@ -21,7 +21,7 @@ namespace PinkReader {
 class RedditAccount;
 class Priority;
 class DownloadStrategy;
-class HTTPRequestBody;
+#include "http/http_request_body.h"
 class CacheDownload;
 class CacheManager;
 class RRError;

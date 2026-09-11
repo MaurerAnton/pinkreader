@@ -27,6 +27,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <set>
 #include <queue>
 #include <string>
 #include <thread>

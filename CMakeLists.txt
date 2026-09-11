@@ -103,6 +103,7 @@ set(SOURCES
     src/cache/cache_pruner.cpp
     src/cache/cache_stats.cpp
     src/cache/cache_request.cpp
+    src/cache/download_strategy_if_not_cached.cpp
     src/cache/cache_writer.cpp
     src/cache/cache_reader.cpp
     src/cache/image_cache.cpp
@@ -268,6 +269,7 @@ set(HEADERS
     src/cache/cache_pruner.h
     src/cache/cache_stats.h
     src/cache/cache_request.h
+    src/cache/download_strategy_if_not_cached.h
     src/cache/cache_writer.h
     src/cache/cache_reader.h
     src/cache/image_cache.h

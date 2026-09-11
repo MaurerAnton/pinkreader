@@ -10,6 +10,7 @@
  */
 
 #include "network/image_hosts/imgur_api.h"
+#include "cache/download_strategy_if_not_cached.h"
 #include "accounts/reddit_account_manager.h"
 #include "cache/cache_manager.h"
 #include "cache/cache_request.h"
@@ -42,8 +43,8 @@ private:
 class JsonObject {
 public:
     explicit JsonObject(const QJsonObject &obj) : m_obj(obj) {}
-    QJsonObject getObject(const QString &key) const {
-        return m_obj.value(key).toObject();
+    JsonObject getObject(const QString &key) const {
+        return JsonObject(m_obj.value(key).toObject());
     }
 private:
     QJsonObject m_obj;

@@ -31,7 +31,7 @@ namespace PinkReader {
 // ============================================================================
 
 class RRError;           // Port of org.quantumbadger.redreader.common.RRError
-class UriString;         // Port of org.quantumbadger.redreader.common.UriString
+#include "common/uri_string.h"         // Port of org.quantumbadger.redreader.common.UriString
 class Context;           // Android Context stub
 class RedditAccount;     // Port of org.quantumbadger.redreader.account.RedditAccount
 class CacheManager;      // Port of org.quantumbadger.redreader.cache.CacheManager
