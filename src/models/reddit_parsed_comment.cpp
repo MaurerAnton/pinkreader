@@ -11,7 +11,7 @@
 // Stub includes for dependencies not yet fully ported
 #include "reddit_comment.h"
 #include "../common/better_ssb.h"
-#include "../common/reddit_id_and_type.h"
+#include "reddit/kthings/reddit_id_and_type.h"
 
 #include <QDebug>
 #include <QImage>

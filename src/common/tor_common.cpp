@@ -7,8 +7,8 @@
  */
 
 #include "tor_common.h"
-#include "general.h"
-#include "prefs_utility.h"
+#include "utils/general.h"
+#include "settings/prefs_utility.h"
 
 // External dependencies (port of Java imports)
 // import org.quantumbadger.redreader.cache.CacheDownload;

@@ -11,9 +11,9 @@
 // Stub includes for dependencies not yet fully ported
 #include "../models/reddit_prepared_post.h"
 #include "../models/reddit_parsed_post.h"
-#include "../common/general.h"
+#include "utils/general.h"
 #include "../common/constants.h"
-#include "../common/prefs_utility.h"
+#include "settings/prefs_utility.h"
 #include "../common/display_utils.h"
 #include "../cache/cache_manager.h"
 #include "../cache/cache_request.h"
@@ -21,7 +21,6 @@
 #include "../fragments/post_listing_fragment.h"
 #include "../activities/base_activity.h"
 #include "../views/loading_spinner_view.h"
-#include "../views/error_view.h"
 #include "../views/accessibility_action_manager.h"
 
 #include <QDebug>

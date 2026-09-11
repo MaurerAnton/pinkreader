@@ -5,7 +5,6 @@
 
 #include "accounts/oauth_token_store.h"
 #include "utils/logging.h"
-#include "utils/encryption.h"
 
 #include <QDir>
 #include <QFile>

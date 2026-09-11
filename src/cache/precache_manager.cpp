@@ -7,7 +7,6 @@
 
 #include "cache/precache_manager.h"
 #include "utils/logging.h"
-#include "utils/file_utils.h"
 
 #include <QDir>
 #include <QFile>

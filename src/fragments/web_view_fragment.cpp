@@ -17,7 +17,6 @@
 #include "activities/base_activity.h"
 #include "cache/cache_manager.h"
 #include "common/uri_string.h"
-#include "common/time/timestamp_utc.h"
 #include "reddit/api/reddit_post_actions.h"
 #include "reddit/kthings/reddit_post.h"
 #include "reddit/prepared/reddit_parsed_post.h"

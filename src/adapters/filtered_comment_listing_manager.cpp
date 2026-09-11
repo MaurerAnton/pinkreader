@@ -10,6 +10,7 @@
  */
 
 #include "adapters/filtered_comment_listing_manager.h"
+#include "common/string_utils.h"
 
 #include <QString>
 #include <algorithm>
@@ -56,16 +57,7 @@ public:
     QString m_decoded;
 };
 
-// StringUtils stub
-class StringUtils {
-public:
-    static QString asciiLowercase(const QString &str) {
-        return str.toLower();
-    }
-    static bool asciiLowercaseContains(const QString &haystack, const QString &needle) {
-        return asciiLowercase(haystack).contains(asciiLowercase(needle));
-    }
-};
+// (QString StringUtils overloads live in common/string_utils.h)
 
 // ============================================================================
 // Constructor (Java lines 37-43)

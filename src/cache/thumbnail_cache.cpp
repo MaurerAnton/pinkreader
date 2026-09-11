@@ -7,7 +7,6 @@
 
 #include "cache/thumbnail_cache.h"
 #include "utils/logging.h"
-#include "utils/file_utils.h"
 
 #include <QDir>
 #include <QFile>

@@ -10,11 +10,11 @@
 
 // Stub includes for dependencies not yet fully ported
 #include "../common/better_ssb.h"
-#include "../common/general.h"
+#include "utils/general.h"
 #include "../common/constants.h"
-#include "../common/link_handler.h"
-#include "../common/timestamp_utc.h"
-#include "../common/time_format_helper.h"
+#include "utils/link_handler.h"
+#include "utils/reddit_time.h"
+#include "common/time/time_format_helper.h"
 #include "../common/screenreader_pronunciation.h"
 #include "../settings/prefs_utility.h"
 #include "../cache/cache_manager.h"

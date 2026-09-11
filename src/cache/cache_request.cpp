@@ -8,7 +8,7 @@
 
 #include "cache/cache_request.h"
 #include "accounts/account.h"
-#include "common/priority.h"
+#include "utils/priority.h"
 #include "common/rr_error.h"
 #include "cache/download_strategy.h"
 #include "cache/cache_download.h"

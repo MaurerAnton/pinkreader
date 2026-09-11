@@ -31,14 +31,7 @@ namespace LinkHandler {
     static void onLinkClicked(AppCompatActivity*, const UriString&) {}
 }
 
-// SearchPostListURL stub
-class SearchPostListURL {
-public:
-    static SearchPostListURL build(const std::string*, const std::string&) {
-        return SearchPostListURL();
-    }
-    std::string generateJsonUri() const { return ""; }
-};
+// (SearchPostListURL lives in reddit/url/search_post_list_url.h)
 
 // ============================================================================
 // Constructors (Java lines 52-68)

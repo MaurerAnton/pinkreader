@@ -11,6 +11,7 @@
  */
 
 #include "fragments/subreddit_search_fragment.h"
+#include "common/string_utils.h"
 
 // ============================================================================
 // Stub types for non-ported Android/RedReader dependencies
@@ -235,12 +236,7 @@ public:
     static void applyTheme(Context *context) { (void)context; }
 };
 
-class StringUtils {
-public:
-    static QString asciiLowercase(const QString &input) {
-        return input.toLower();
-    }
-};
+// (QString StringUtils overloads live in common/string_utils.h)
 
 class EventListenerSetStub {
 public:
