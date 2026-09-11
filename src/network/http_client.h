@@ -33,8 +33,6 @@
 
 namespace PinkReader {
 
-class QNetworkAccessManager;
-
 // Forward declarations
 class RedditOAuth;
 
