@@ -82,7 +82,7 @@ template<typename T, typename E = std::exception>
 class LambdaFactory {
 public:
     using FactoryFunc = std::function<T()>;
-    explicit GenericFactory(FactoryFunc func) : m_func(std::move(func)) {}
+    explicit LambdaFactory(FactoryFunc func) : m_func(std::move(func)) {}
     T create() const { return m_func(); }
 
 private:
