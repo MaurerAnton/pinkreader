@@ -15,6 +15,8 @@
 
 #pragma once
 
+#include <QNetworkAccessManager>
+
 #include <QObject>
 #include <QString>
 #include <QJsonObject>
@@ -73,7 +75,7 @@ public:
     explicit HttpClient(QObject *parent = nullptr);
     ~HttpClient() override;
 
-    static HttpClient &instance();
+    static HttpClient *instance();
 
     // Shared network access manager (used by API helpers).
     QNetworkAccessManager *networkManager();
