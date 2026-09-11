@@ -39,6 +39,7 @@ jobs:
             libqt6sql6-sqlite \
             libqt6network6 \
             qt6-multimedia-dev \
+            libqt6svg6-dev \
             libgl1-mesa-dev \
             libxkbcommon-dev \
             cmake \
