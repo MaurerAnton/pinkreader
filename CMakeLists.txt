@@ -103,7 +103,9 @@ set(SOURCES
     src/cache/cache_pruner.cpp
     src/cache/cache_stats.cpp
     src/cache/cache_request.cpp
+    src/cache/cache_download.cpp
     src/cache/download_strategy_if_not_cached.cpp
+    src/cache/download_strategy_if_timestamp.cpp
     src/cache/cache_writer.cpp
     src/cache/cache_reader.cpp
     src/cache/image_cache.cpp
@@ -181,6 +183,8 @@ set(SOURCES
     src/accounts/account_store.cpp
     src/accounts/account_switcher.cpp
     src/accounts/oauth_token_store.cpp
+    src/accounts/reddit_account.cpp
+    src/accounts/reddit_account_manager.cpp
 
     # Settings/Preferences
     src/settings/preferences.cpp
@@ -201,6 +205,8 @@ set(SOURCES
     src/utils/deep_link_handler.cpp
     src/utils/backup_manager.cpp
     src/utils/intent_handler.cpp
+    src/utils/reddit_time.cpp
+    src/utils/general.cpp
 )
 
 set(HEADERS

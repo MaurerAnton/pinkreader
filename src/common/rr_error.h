@@ -70,14 +70,44 @@ public:
             const std::optional<QString> &exceptionMessage = std::nullopt,
             const std::optional<int> &httpStatus = std::nullopt,
             const std::optional<QString> &url = std::nullopt,
-            const std::optional<QString> &responseBody = std::nullopt);
+            const std::optional<QString> &responseBody = std::nullopt) {
+        RRError e;
+        e.exceptionMessage = exceptionMessage;
+        e.httpStatus = httpStatus;
+        e.url = url;
+        e.responseBody = responseBody;
+        switch (type) {
+            case RequestFailureType::MALFORMED_URL:
+                e.title = QStringLiteral("Invalid URL");
+                e.message = QStringLiteral("The URL was malformed.");
+                break;
+            case RequestFailureType::CACHE_MISS:
+                e.title = QStringLiteral("Cache miss");
+                e.message = QStringLiteral("No cached copy was available.");
+                e.reportable = false;
+                break;
+            default:
+                e.title = QStringLiteral("Error");
+                e.message = QStringLiteral("Something went wrong.");
+                break;
+        }
+        return e;
+    }
 
     // Static factory for API failures.
     // Called as: RRError::generalErrorForFailure(type, debuggingContext, responseBody)
     static RRError generalErrorForFailure(
             APIFailureType type,
             const std::optional<QString> &debuggingContext = std::nullopt,
-            const std::optional<QString> &responseBody = std::nullopt);
+            const std::optional<QString> &responseBody = std::nullopt) {
+        (void)type;
+        RRError e;
+        e.url = debuggingContext;
+        e.responseBody = responseBody;
+        e.title = QStringLiteral("API Error");
+        e.message = QStringLiteral("The request failed.");
+        return e;
+    }
 
 private:
     // Port of: private fun isTorError(t: Throwable?): Boolean
