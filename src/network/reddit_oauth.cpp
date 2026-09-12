@@ -26,12 +26,12 @@
 
 namespace PinkReader {
 
-RedditOAuth::RedditOAuth(QObject *parent)
+RedditOauth::RedditOauth(QObject *parent)
     : QObject(parent)
 {
 }
 
-RedditOAuth::~RedditOAuth()
+RedditOauth::~RedditOauth()
 {
     // Cancel any active requests
     for (QNetworkReply *reply : m_activeReplies) {
@@ -44,7 +44,7 @@ RedditOAuth::~RedditOAuth()
     m_pendingRequests.clear();
 }
 
-bool RedditOAuth::initialize()
+bool RedditOauth::initialize()
 {
     if (m_initialized) {
         Logging::debug("Network::" + QString::fromLatin1("RedditOauth"),
@@ -77,12 +77,12 @@ bool RedditOAuth::initialize()
     return true;
 }
 
-bool RedditOAuth::isInitialized() const
+bool RedditOauth::isInitialized() const
 {
     return m_initialized;
 }
 
-void RedditOAuth::get(const QString &endpoint,
+void RedditOauth::get(const QString &endpoint,
                         const QUrlQuery &params,
                         ResponseCallback callback)
 {
@@ -104,7 +104,7 @@ void RedditOAuth::get(const QString &endpoint,
     executeRequest(ctx);
 }
 
-void RedditOAuth::post(const QString &endpoint,
+void RedditOauth::post(const QString &endpoint,
                          const QJsonObject &body,
                          ResponseCallback callback)
 {
@@ -126,7 +126,7 @@ void RedditOAuth::post(const QString &endpoint,
     executeRequest(ctx);
 }
 
-void RedditOAuth::put(const QString &endpoint,
+void RedditOauth::put(const QString &endpoint,
                         const QJsonObject &body,
                         ResponseCallback callback)
 {
@@ -148,7 +148,7 @@ void RedditOAuth::put(const QString &endpoint,
     executeRequest(ctx);
 }
 
-void RedditOAuth::deleteRequest(const QString &endpoint,
+void RedditOauth::deleteRequest(const QString &endpoint,
                                   ResponseCallback callback)
 {
     if (!m_initialized) {
@@ -168,61 +168,61 @@ void RedditOAuth::deleteRequest(const QString &endpoint,
     executeRequest(ctx);
 }
 
-void RedditOAuth::setBaseUrl(const QString &url)
+void RedditOauth::setBaseUrl(const QString &url)
 {
     m_baseUrl = url;
     Logging::debug("Network::" + QString::fromLatin1("RedditOauth"),
         QString("Base URL set to: %1").arg(url));
 }
 
-QString RedditOAuth::baseUrl() const
+QString RedditOauth::baseUrl() const
 {
     return m_baseUrl;
 }
 
-void RedditOAuth::setTimeout(int milliseconds)
+void RedditOauth::setTimeout(int milliseconds)
 {
     m_timeout = milliseconds;
     Logging::debug("Network::" + QString::fromLatin1("RedditOauth"),
         QString("Timeout set to: %1 ms").arg(milliseconds));
 }
 
-int RedditOAuth::timeout() const
+int RedditOauth::timeout() const
 {
     return m_timeout;
 }
 
-void RedditOAuth::setMaxRetries(int retries)
+void RedditOauth::setMaxRetries(int retries)
 {
     m_maxRetries = qMax(0, qMin(retries, 10));
     Logging::debug("Network::" + QString::fromLatin1("RedditOauth"),
         QString("Max retries set to: %1").arg(m_maxRetries));
 }
 
-int RedditOAuth::maxRetries() const
+int RedditOauth::maxRetries() const
 {
     return m_maxRetries;
 }
 
-int RedditOAuth::pendingRequestCount() const
+int RedditOauth::pendingRequestCount() const
 {
     QMutexLocker locker(&m_requestMutex);
     return m_activeReplies.size() + m_pendingRequests.size();
 }
 
-int RedditOAuth::totalRequestsSent() const
+int RedditOauth::totalRequestsSent() const
 {
     QMutexLocker locker(&m_statsMutex);
     return m_totalSent;
 }
 
-int RedditOAuth::totalRequestsFailed() const
+int RedditOauth::totalRequestsFailed() const
 {
     QMutexLocker locker(&m_statsMutex);
     return m_totalFailed;
 }
 
-void RedditOAuth::clearStatistics()
+void RedditOauth::clearStatistics()
 {
     QMutexLocker locker(&m_statsMutex);
     m_totalSent = 0;
@@ -233,7 +233,7 @@ void RedditOAuth::clearStatistics()
 // Private Implementation
 // ---------------------------------------------------------------------------
 
-void RedditOAuth::executeRequest(const RequestContext &ctx)
+void RedditOauth::executeRequest(const RequestContext &ctx)
 {
     // Build the full URL
     QUrl url(m_baseUrl + ctx.endpoint);
@@ -298,7 +298,7 @@ void RedditOAuth::executeRequest(const RequestContext &ctx)
     }
 }
 
-void RedditOAuth::handleReply(QNetworkReply *reply, RequestContext ctx)
+void RedditOauth::handleReply(QNetworkReply *reply, RequestContext ctx)
 {
     reply->deleteLater();
 
@@ -361,7 +361,7 @@ void RedditOAuth::handleReply(QNetworkReply *reply, RequestContext ctx)
     }
 }
 
-void RedditOAuth::retryRequest(RequestContext ctx)
+void RedditOauth::retryRequest(RequestContext ctx)
 {
     ctx.retryCount++;
     int delay = 1000 * ctx.retryCount;  // Linear backoff: 1s, 2s, 3s...
@@ -370,7 +370,7 @@ void RedditOAuth::retryRequest(RequestContext ctx)
     });
 }
 
-bool RedditOAuth::shouldRetry(int statusCode) const
+bool RedditOauth::shouldRetry(int statusCode) const
 {
     // Retry on server errors and rate limiting
     return statusCode >= 500 || statusCode == 429 || statusCode == 0;

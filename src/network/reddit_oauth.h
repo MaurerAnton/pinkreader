@@ -39,7 +39,7 @@ class RedditOAuth;
  *
  * @note Part of the PinkReader network layer
  */
-class RedditOAuth : public QObject
+class RedditOauth : public QObject
 {
     Q_OBJECT
 
@@ -68,8 +68,8 @@ public:
         const QString &errorMessage
     )>;
 
-    explicit RedditOAuth(QObject *parent = nullptr);
-    ~RedditOAuth() override;
+    explicit RedditOauth(QObject *parent = nullptr);
+    ~RedditOauth() override;
 
     // Initialization
     bool initialize();

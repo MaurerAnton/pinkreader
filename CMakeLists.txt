@@ -72,6 +72,7 @@ set(SOURCES
     # Network/API
     src/network/reddit_api.cpp
     src/network/reddit_oauth.cpp
+    src/reddit/api/reddit_oauth.cpp
     src/network/reddit_requester.cpp
     src/network/http_client.cpp
     src/network/json_parser.cpp
