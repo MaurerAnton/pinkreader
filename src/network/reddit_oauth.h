@@ -68,8 +68,8 @@ public:
         const QString &errorMessage
     )>;
 
-    explicit RedditOauth(QObject *parent = nullptr);
-    ~RedditOauth() override;
+    explicit RedditOAuth(QObject *parent = nullptr);
+    ~RedditOAuth() override;
 
     // Initialization
     bool initialize();
