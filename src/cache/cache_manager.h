@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include <QByteArray>
+#include <QFileInfo>
 #include <QObject>
 #include <QString>
 #include <QUuid>
