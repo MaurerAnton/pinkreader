@@ -16,7 +16,7 @@ namespace {
 
 void onTerminate() {
     try {
-        if (auto *e = std::current_exception()) {
+        if (auto e = std::current_exception()) {
             try {
                 std::rethrow_exception(e);
             } catch (const std::exception &ex) {
