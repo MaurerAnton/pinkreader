@@ -51,6 +51,11 @@ class CacheDbManager {};
 class PrioritisedDownloadQueue {};
 class PrioritisedCachedThreadPool {};
 
+enum class CacheCompressionType {
+    NONE = 0,
+    ZSTD = 1
+};
+
 // Minimal CacheEntry compatible with cache_manager.cpp usage
 // (id/timestamp/session/mimetype/compression). The legacy QObject-based
 // cache_entry.h defines an unrelated type with the same name and must
@@ -61,11 +66,6 @@ struct CacheEntry {
 	QUuid session;
 	std::optional<QString> mimetype;
 	CacheCompressionType cacheCompressionType = CacheCompressionType::NONE;
-};
-
-enum class CacheCompressionType {
-    NONE = 0,
-    ZSTD = 1
 };
 
 // ============================================================================
