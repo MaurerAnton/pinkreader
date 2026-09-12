@@ -82,7 +82,7 @@ public:
 			const DownloadStrategy &downloadStrategy,
 			int fileType,
 			DownloadQueueType queueType,
-			const CacheRequestCallbacks &callbacks);
+			CacheRequestCallbacks &callbacks);
 
 	// ---- Constructor 2: 7-arg without requestBody, cache default (Java lines 135-157) ----
 	CacheRequest(
@@ -94,7 +94,7 @@ public:
 			int fileType,
 			DownloadQueueType queueType,
 			bool cache,
-			const CacheRequestCallbacks &callbacks);
+			CacheRequestCallbacks &callbacks);
 
 	// ---- Constructor 3: 8-arg with requestBody, cache=false (Java lines 159-183) ----
 	CacheRequest(
@@ -106,7 +106,7 @@ public:
 			int fileType,
 			DownloadQueueType queueType,
 			const std::optional<HTTPRequestBody> &requestBody,
-			const CacheRequestCallbacks &callbacks);
+			CacheRequestCallbacks &callbacks);
 
 	// ---- Master constructor (Java lines 186-232) ----
 	CacheRequest(
@@ -119,7 +119,7 @@ public:
 			DownloadQueueType queueType,
 			const std::optional<HTTPRequestBody> &requestBody,
 			bool cache,
-			const CacheRequestCallbacks &callbacks);
+			CacheRequestCallbacks &callbacks);
 
 	~CacheRequest();
 
@@ -167,7 +167,7 @@ public:
 private:
 	CacheDownload *m_download = nullptr;
 	bool m_cancelled = false;
-	const CacheRequestCallbacks &m_callbacks;
+	CacheRequestCallbacks &m_callbacks;
 
 	void onCallbackException(const std::exception &t);
 };
