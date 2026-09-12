@@ -55,7 +55,7 @@ class RRError;
 class UriString;
 class SeekableInputStream;
 class FailedRequestBody;
-template<typename T> class GenericFactory;
+template<typename T, typename E> class GenericFactory;
 
 // RedReader reddit
 class RedditThing;

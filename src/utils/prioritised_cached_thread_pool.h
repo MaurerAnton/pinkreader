@@ -104,7 +104,7 @@ private:
     int m_idleThreads = 0;
 
     // Synchronization — C++ equivalents of Java synchronized(mTasks) and mTasks.wait/notifyAll
-    QMutex m_mutex;
+    mutable QMutex m_mutex;
     QWaitCondition m_condition;
 
     bool m_shuttingDown = false; // C++ addition for graceful shutdown

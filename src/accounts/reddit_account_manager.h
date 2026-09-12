@@ -70,7 +70,7 @@ protected:
     virtual void notifyListener(E *listener) = 0;
 
 private:
-    QMutex m_mutex;
+    mutable QMutex m_mutex;
     std::vector<E *> m_listeners;
 };
 
@@ -166,7 +166,7 @@ private:
     static RedditAccountManager *s_singleton;
     static QMutex s_singletonMutex;
 
-    QMutex m_dbMutex;
+    mutable QMutex m_dbMutex;
     QString m_dbPath;
 };
 

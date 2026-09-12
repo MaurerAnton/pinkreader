@@ -6,11 +6,12 @@
 #include <QVector>
 #include <memory>
 
+#include "grouped_recycler_adapter.h"
+#include "grouped_rv_item_frame_layout.h"
+
 namespace PinkReader {
 
 // Forward declarations
-class GroupedRecyclerViewAdapter;
-class GroupedRecyclerViewItemFrameLayout;
 class LinearLayoutManager;
 class LoadingSpinnerView;
 class RedditPostHeaderView;

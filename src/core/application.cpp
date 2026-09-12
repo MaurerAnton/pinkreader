@@ -38,12 +38,17 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QWindow>
-#include <QDesktopWidget>
 
 #ifdef Q_OS_ANDROID
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QtAndroidExtras/QtAndroid>
 #include <QtAndroidExtras/QAndroidJniEnvironment>
 #include <QtAndroidExtras/QAndroidJniObject>
+#else
+// Qt6: Android extras moved to QJniObject / QNativeInterface.
+// Full JNI port is TODO; Android builds compile against stubs below.
+#include <QJniObject>
+#endif
 #endif
 
 namespace PinkReader {
@@ -82,15 +87,28 @@ Application::Application(int &argc, char **argv)
     connect(this, &QApplication::applicationStateChanged,
             this, &Application::onApplicationStateChanged);
 
-    // Monitor system theme changes (light/dark mode switching)
+    // Monitor system theme changes (light/dark mode switching).
+    // QStyleHints::colorScheme needs Qt 6.8+; fall back to the palette
+    // lightness check on older Qt (e.g. Ubuntu 24.04's Qt 6.4).
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
     connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged,
             this, [this]() {
-        bool isDark = QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+        const bool isDark = QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
         Logging::info("Application",
             QString("System theme changed to: %1")
                 .arg(isDark ? QStringLiteral("Dark") : QStringLiteral("Light")));
         emit systemThemeChanged(isDark);
     });
+#else
+    connect(qApp, &QGuiApplication::paletteChanged,
+            this, [this](const QPalette &palette) {
+        const bool isDark = palette.color(QPalette::Window).lightness() < 128;
+        Logging::info("Application",
+            QString("System theme changed to: %1")
+                .arg(isDark ? QStringLiteral("Dark") : QStringLiteral("Light")));
+        emit systemThemeChanged(isDark);
+    });
+#endif
 
     Logging::info("Application", "PinkReader application initialized");
 }
@@ -194,8 +212,8 @@ void Application::requestOrientation(Qt::ScreenOrientation orientation)
     Logging::debug("Application",
         QString("Requesting orientation: %1").arg(static_cast<int>(orientation)));
 
-#ifdef Q_OS_ANDROID
-    // On Android, we set the Activity's requested orientation
+#if defined(Q_OS_ANDROID) && QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    // On Android (Qt5), we set the Activity's requested orientation
     QAndroidJniObject activity = QtAndroid::androidActivity();
     if (activity.isValid()) {
         jint androidOrientation;
@@ -221,7 +239,8 @@ void Application::requestOrientation(Qt::ScreenOrientation orientation)
     }
 #else
     Q_UNUSED(orientation)
-    // Desktop: orientation changes are handled by the window manager
+    // Desktop + Qt6 Android: orientation changes are handled by the window
+    // manager / activity manifest. Full QJniObject port is TODO.
 #endif
 }
 
@@ -263,7 +282,7 @@ void Application::initializeAndroid()
 {
     Logging::info("Application", "Initializing Android platform...");
 
-#ifdef Q_OS_ANDROID
+#if defined(Q_OS_ANDROID) && QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     // Request necessary Android permissions
     // Note: Some permissions (like notifications on Android 13+)
     // are requested at runtime when first needed
@@ -343,6 +362,10 @@ void Application::initializeAndroid()
             }
         }
     }
+#else
+    // Qt6 Android / Desktop: permissions are declared in the manifest and
+    // deep links arrive via QEvent::FileOpen. Full QJniObject port is TODO.
+    Q_UNUSED(this)
 #endif
 }
 

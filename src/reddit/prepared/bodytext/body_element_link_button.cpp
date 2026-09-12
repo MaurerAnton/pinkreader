@@ -3,7 +3,7 @@
 
 #include "body_element_link_button.h"
 
-// Placeholder: #include "link_handler.h"
+// Placeholder: #include "utils/link_handler.h"
 
 namespace PinkReader {
 

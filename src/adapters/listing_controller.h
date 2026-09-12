@@ -39,10 +39,6 @@ public:
     int itemCount() const;
     bool isEmpty() const;
 
-signals:
-    void itemsLoaded(int count);
-    void itemsCleared();
-
     void setAfter(const QString &after);
     QString after() const;
     bool hasMore() const;
@@ -50,6 +46,10 @@ signals:
     QString sortOrder() const;
     int currentPage() const;
     void resetPagination();
+
+signals:
+    void itemsLoaded(int count);
+    void itemsCleared();
 
 private:
     QVector<QJsonObject> m_items;

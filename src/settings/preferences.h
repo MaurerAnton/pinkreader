@@ -49,6 +49,9 @@ public:
     void remove(const QString &key);
     QStringList allKeys() const;
 
+    // Process-wide singleton (used by main()).
+    static Preferences &instance();
+
     // Import/Export
     QJsonObject exportAll() const;
     bool importAll(const QJsonObject &settings);

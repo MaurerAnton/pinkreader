@@ -15,6 +15,8 @@
 
 #pragma once
 
+#include <QNetworkAccessManager>
+
 #include <QObject>
 #include <QString>
 #include <QJsonObject>
@@ -70,6 +72,11 @@ public:
 
     explicit HttpClient(QObject *parent = nullptr);
     ~HttpClient() override;
+
+    static HttpClient *instance();
+
+    // Shared network access manager (used by API helpers).
+    QNetworkAccessManager *networkManager();
 
     // Initialization
     bool initialize();
@@ -144,7 +151,8 @@ private:
     // Active request tracking
     QVector<QNetworkReply *> m_activeReplies;
     QVector<RequestContext> m_pendingRequests;
-    QMutex m_requestMutex;
+    mutable QMutex m_requestMutex;
+    QNetworkAccessManager *m_nam = nullptr;
 
     static constexpr int MAX_PENDING_REQUESTS = 100;
     static constexpr int REQUEST_COOLDOWN_MS = 100;

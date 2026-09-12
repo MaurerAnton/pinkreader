@@ -435,7 +435,7 @@ public:
      * @param seed Seed value
      * @return Hash value
      */
-    friend uint qHash(const RedditSaveState &key, uint seed = 0);
+    friend uint qHash(const RedditSaveState &key, uint seed);
 
 private:
     // Core identification

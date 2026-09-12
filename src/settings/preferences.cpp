@@ -285,4 +285,9 @@ void Preferences::registerDefaults()
         {false, QStringLiteral("Announce comment indent levels")};
 }
 
+Preferences &Preferences::instance() {
+    static Preferences inst;
+    return inst;
+}
+
 } // namespace PinkReader

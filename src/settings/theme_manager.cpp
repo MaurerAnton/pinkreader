@@ -6,6 +6,10 @@
  */
 
 #include "settings/theme_manager.h"
+
+#include <QApplication>
+#include <QFile>
+#include <QWidget>
 #include "utils/logging.h"
 
 #include <QDir>
@@ -283,6 +287,47 @@ void ThemeManager::registerDefaults()
         {48, QStringLiteral("Minimum comment height for accessibility")};
     m_defaults[QStringLiteral("accessibility_announce_indent")] =
         {false, QStringLiteral("Announce comment indent levels")};
+}
+
+ThemeManager &ThemeManager::instance() {
+    static ThemeManager inst;
+    return inst;
+}
+
+void ThemeManager::applyCurrentTheme(QApplication *app) {
+    if (app == nullptr) {
+        return;
+    }
+    QString name = getString(QStringLiteral("theme"), QStringLiteral("dark")).toLower();
+    // Theme files shipped in resources.qrc as :/themes/<name>.qss
+    static const QStringList known = { QStringLiteral("light"),
+        QStringLiteral("dark"), QStringLiteral("night"),
+        QStringLiteral("ultra_black"), QStringLiteral("blue"),
+        QStringLiteral("low_contrast_night") };
+    if (!known.contains(name)) {
+        name = QStringLiteral("dark");
+    }
+    QFile sheet(QStringLiteral(":/themes/%1.qss").arg(name));
+    if (sheet.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        app->setStyleSheet(QString::fromUtf8(sheet.readAll()));
+    }
+    emit themeApplied(name);
+}
+
+void ThemeManager::applyToWidget(QWidget *widget) {
+    if (widget == nullptr) {
+        return;
+    }
+    if (auto *app = qobject_cast<QApplication *>(QCoreApplication::instance())) {
+        applyCurrentTheme(app);
+        // Mirror the app stylesheet onto the widget so ported call sites
+        // see an immediate effect even before a repaint.
+        const QString sheet = app->styleSheet();
+        if (!sheet.isEmpty()) {
+            widget->setStyleSheet(sheet);
+        }
+    }
+    widget->update();
 }
 
 } // namespace PinkReader

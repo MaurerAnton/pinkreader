@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include <QByteArray>
+#include <QFileInfo>
 #include <QObject>
 #include <QString>
 #include <QUuid>
@@ -27,27 +29,43 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <set>
 #include <queue>
 #include <string>
 #include <thread>
 #include <vector>
 #include <condition_variable>
 
+#include "utils/reddit_time.h"
+
 namespace PinkReader {
 
 // Forward declarations
 class Account;                         // RedditAccount port
-class CacheDbManager;
-class PrioritisedDownloadQueue;
-class PrioritisedCachedThreadPool;
 class CacheRequest;
-class CacheEntry;
-class TimeDuration;
 class UriString;
+
+// Stub managers — full ports live in non-compiled legacy headers;
+// empty definitions here satisfy unique_ptr destruction in this TU.
+class CacheDbManager {};
+class PrioritisedDownloadQueue {};
+class PrioritisedCachedThreadPool {};
 
 enum class CacheCompressionType {
     NONE = 0,
     ZSTD = 1
+};
+
+// Minimal CacheEntry compatible with cache_manager.cpp usage
+// (id/timestamp/session/mimetype/compression). The legacy QObject-based
+// cache_entry.h defines an unrelated type with the same name and must
+// not be included together with this header.
+struct CacheEntry {
+	int64_t id = 0;
+	TimestampUTC timestamp;
+	QUuid session;
+	std::optional<QString> mimetype;
+	CacheCompressionType cacheCompressionType = CacheCompressionType::NONE;
 };
 
 // ============================================================================
@@ -71,15 +89,17 @@ private:
 };
 
 // ============================================================================
-// GenericFactory — simple factory returning T
-// Port of org.quantumbadger.redreader.common.GenericFactory
+// LambdaFactory — simple concrete factory returning T.
+// (The upstream GenericFactory interface lives in
+// cache_request_callbacks.h; this concrete helper keeps a distinct name
+// so the two never collide.)
 // ============================================================================
 
 template<typename T, typename E = std::exception>
-class GenericFactory {
+class LambdaFactory {
 public:
     using FactoryFunc = std::function<T()>;
-    explicit GenericFactory(FactoryFunc func) : m_func(std::move(func)) {}
+    explicit LambdaFactory(FactoryFunc func) : m_func(std::move(func)) {}
     T create() const { return m_func(); }
 
 private:

@@ -45,14 +45,25 @@ public:
 	static const TimestampBound &NONE();
 
 	// Port of: public static final class MoreRecentThanBound extends TimestampBound
-	class MoreRecentThanBound final : public TimestampBound {
-	public:
-		// Port of: public MoreRecentThanBound(final TimestampUTC minTimestamp)
-		explicit MoreRecentThanBound(TimestampUTC minTimestamp)
-			: m_minTimestamp(std::move(minTimestamp)) {}
+	// NOTE: nested type is only declared here and defined after the outer
+	// class is complete — a nested class cannot inherit from its own
+	// incomplete outer type inside the class body.
+	class MoreRecentThanBound;
 
-		// Port of: @Override public boolean verifyTimestamp(final TimestampUTC timestamp)
-		//   return timestamp.isGreaterThan(minTimestamp);
+	// Port of: public static MoreRecentThanBound notOlderThan(final TimeDuration age)
+	//   return new MoreRecentThanBound(TimestampUTC.now().subtract(age));
+	static MoreRecentThanBound notOlderThan(const TimeDuration &age);
+};
+
+// Port of: public static final class MoreRecentThanBound extends TimestampBound
+class TimestampBound::MoreRecentThanBound final : public TimestampBound {
+public:
+	// Port of: public MoreRecentThanBound(final TimestampUTC minTimestamp)
+	explicit MoreRecentThanBound(TimestampUTC minTimestamp)
+		: m_minTimestamp(std::move(minTimestamp)) {}
+
+	// Port of: @Override public boolean verifyTimestamp(final TimestampUTC timestamp)
+	//   return timestamp.isGreaterThan(minTimestamp);
 	bool verifyTimestamp(const TimestampUTC &timestamp) const override {
 		return timestamp.isGreaterThan(m_minTimestamp);
 	}
@@ -61,17 +72,15 @@ public:
 		return std::make_unique<MoreRecentThanBound>(m_minTimestamp);
 	}
 
-	private:
-		// Port of: private final TimestampUTC minTimestamp;
-		TimestampUTC m_minTimestamp;
-	};
-
-	// Port of: public static MoreRecentThanBound notOlderThan(final TimeDuration age)
-	//   return new MoreRecentThanBound(TimestampUTC.now().subtract(age));
-	static MoreRecentThanBound notOlderThan(const TimeDuration &age) {
-		return MoreRecentThanBound(TimestampUTC::now().subtract(age));
-	}
+private:
+	// Port of: private final TimestampUTC minTimestamp;
+	TimestampUTC m_minTimestamp;
 };
+
+inline TimestampBound::MoreRecentThanBound TimestampBound::notOlderThan(
+		const TimeDuration &age) {
+	return MoreRecentThanBound(TimestampUTC::now().subtract(age));
+}
 
 // Inline definitions for the static singletons
 

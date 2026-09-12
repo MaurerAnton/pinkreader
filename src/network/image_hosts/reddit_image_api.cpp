@@ -15,6 +15,7 @@
 #include "common/rr_error.h"
 #include "core/constants.h"
 #include "utils/general.h"
+#include "cache/cache_request_callbacks.h"
 
 #include <QByteArray>
 #include <QJsonDocument>

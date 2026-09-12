@@ -7,11 +7,10 @@
  */
 
 #include "cache/cache_request.h"
-#include "accounts/account.h"
-#include "common/priority.h"
+#include "accounts/reddit_account.h"
+#include "utils/priority.h"
 #include "common/rr_error.h"
 #include "cache/download_strategy.h"
-#include "cache/cache_download.h"
 #include "http/http_request_body.h"
 #include "utils/logging.h"
 
@@ -20,8 +19,12 @@
 
 namespace PinkReader {
 
-using DownloadQueueType = CacheRequest::DownloadQueueType;
-using RequestFailureType = CacheRequest::RequestFailureType;
+void CacheDownload::cancel() { m_cancelled = true; }
+void CacheDownload::cancelDownload() { cancel(); }
+
+// NOTE: do not introduce `using DownloadQueueType/RequestFailureType` aliases
+// here — PinkReader already has a global RequestFailureType (rr_error.h) and
+// the nested CacheRequest:: enums must stay fully qualified.
 
 // ============================================================================
 // Constructor 1: 7-arg, cache defaults to true, no requestBody
@@ -34,8 +37,8 @@ CacheRequest::CacheRequest(
         const Priority &priority,
         const DownloadStrategy &downloadStrategy,
         int fileType,
-        DownloadQueueType queueType,
-        const CacheRequestCallbacks &callbacks)
+        CacheRequest::DownloadQueueType queueType,
+        CacheRequestCallbacks &callbacks)
     : CacheRequest(url, user, requestSession, priority, downloadStrategy,
                    fileType, queueType, std::nullopt, true, callbacks)
 {
@@ -52,9 +55,9 @@ CacheRequest::CacheRequest(
         const Priority &priority,
         const DownloadStrategy &downloadStrategy,
         int fileType,
-        DownloadQueueType queueType,
+        CacheRequest::DownloadQueueType queueType,
         bool cache,
-        const CacheRequestCallbacks &callbacks)
+        CacheRequestCallbacks &callbacks)
     : CacheRequest(url, user, requestSession, priority, downloadStrategy,
                    fileType, queueType, std::nullopt, cache, callbacks)
 {
@@ -71,9 +74,9 @@ CacheRequest::CacheRequest(
         const Priority &priority,
         const DownloadStrategy &downloadStrategy,
         int fileType,
-        DownloadQueueType queueType,
+        CacheRequest::DownloadQueueType queueType,
         const std::optional<HTTPRequestBody> &requestBody,
-        const CacheRequestCallbacks &callbacks)
+        CacheRequestCallbacks &callbacks)
     : CacheRequest(url, user, requestSession, priority, downloadStrategy,
                    fileType, queueType, requestBody, false, callbacks)
 {
@@ -90,10 +93,10 @@ CacheRequest::CacheRequest(
         const Priority &priority,
         const DownloadStrategy &downloadStrategy,
         int fileType,
-        DownloadQueueType queueType,
+        CacheRequest::DownloadQueueType queueType,
         const std::optional<HTTPRequestBody> &requestBody,
         bool cache,
-        const CacheRequestCallbacks &callbacks)
+        CacheRequestCallbacks &callbacks)
     : url(url)
     , user(user)
     , requestSession(requestSession)
@@ -112,11 +115,9 @@ CacheRequest::CacheRequest(
     // Already set via initializer list
 
     // Java lines 202-205: user null check
-    // In C++ user is a reference, can't be null. Assert for sanity.
-    if (user.username().isEmpty()) {
-        throw std::invalid_argument(
-            "User was null - set to empty string for anonymous");
-    }
+    // In C++ user is a reference, can't be null. Anonymous (empty username)
+    // is valid — no throw. Touch the ref to avoid unused warnings.
+    (void)user;
 
     // Java lines 207-210: downloadStrategy check for POST + cache
     if (!downloadStrategy.shouldDownloadWithoutCheckingCache()
@@ -130,7 +131,7 @@ CacheRequest::CacheRequest(
     // Java lines 222-231: url null check
     if (url.isEmpty()) {
         notifyFailure(RRError::generalErrorForFailure(
-                RequestFailureType::MALFORMED_URL,
+                ::PinkReader::RequestFailureType::MALFORMED_URL,
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
@@ -261,8 +262,9 @@ void CacheRequest::notifyCacheFileWritten(
         const QString &mimetype)
 {
     try {
+        const std::optional<QString> optMimetype(mimetype);
         m_callbacks.onCacheFileWritten(
-                cacheFile, timestamp, session, fromCache, mimetype);
+                cacheFile, timestamp, session, fromCache, optMimetype);
     } catch (const std::exception &t) {
         onCallbackException(t);
     }

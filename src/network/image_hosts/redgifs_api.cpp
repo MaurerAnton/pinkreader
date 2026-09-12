@@ -10,7 +10,12 @@
  */
 
 #include "network/image_hosts/redgifs_api.h"
+#include "cache/download_strategy_if_timestamp.h"
+#include "common/timestamp_bound.h"
+#include "utils/priority.h"
+#include "utils/reddit_time.h"
 #include "accounts/reddit_account_manager.h"
+#include "cache/cache_request_callbacks.h"
 #include "cache/cache_manager.h"
 #include "cache/cache_request.h"
 #include "common/rr_error.h"
@@ -31,22 +36,17 @@
 namespace PinkReader {
 
 // ============================================================================
-// Stub classes for types not yet fully ported
+// Local JSON helpers (value semantics matching the call sites below).
+// NOTE: these intentionally shadow nothing — the jsonwrap types are
+// pointer-based and live in other TUs; these file-local helpers keep the
+// ported call chains (`result.asObject().getObject(..)`) compiling.
 // ============================================================================
-
-class FailedRequestBody {
-public:
-    explicit FailedRequestBody(const QJsonValue &result) : m_result(result) {}
-    const QJsonValue &result() const { return m_result; }
-private:
-    QJsonValue m_result;
-};
 
 class JsonObject {
 public:
     explicit JsonObject(const QJsonObject &obj) : m_obj(obj) {}
-    QJsonObject getObject(const QString &key) const {
-        return m_obj.value(key).toObject();
+    JsonObject getObject(const QString &key) const {
+        return JsonObject(m_obj.value(key).toObject());
     }
 private:
     QJsonObject m_obj;
@@ -61,23 +61,9 @@ private:
 };
 
 // ============================================================================
-// ImageInfo stub — port of org.quantumbadger.redreader.image.ImageInfo.parseGfycat
-// ============================================================================
-
-class ImageInfo {
-public:
-    // Port of: ImageInfo.parseGfycat(outer) (Java RedgifsAPI line 75)
-    static ImageInfo parseGfycat(const JsonObject &outer) {
-        // Full implementation requires ImageInfo.kt port
-        (void)outer;
-        throw std::runtime_error("ImageInfo::parseGfycat not yet ported");
-    }
-};
-
-// ============================================================================
-// CacheRequestJSONParser — port of inner class pattern
-//
-// Port of: org.quantumbadger.redreader.cache.CacheRequestJSONParser
+// CacheRequestJSONParser — local Qt-style implementation for this TU.
+// (The cache/ namesake uses different callback types; this one matches the
+// Qt-style CacheRequestCallbacks that CacheRequest::CacheRequest takes.)
 // ============================================================================
 
 class CacheRequestJSONParser : public CacheRequestCallbacks {
@@ -110,8 +96,8 @@ public:
             const QUuid &session,
             bool fromCache,
             const std::optional<QString> &mimetype) override {
-        (void)mimetype;
         try {
+            // Read the stream and parse as JSON
             QByteArray data = streamFactory.create();
             QJsonParseError parseError;
             QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
@@ -124,6 +110,7 @@ public:
             JsonValue result(doc);
             m_listener.onJsonParsed(result, timestamp, session, fromCache);
         } catch (const std::exception &t) {
+            // Port of: catch(Throwable t) block
             RRError error = General::getGeneralErrorForFailure(
                 General::RequestFailureType::PARSE,
                 QString::fromStdString(t.what()),
@@ -138,40 +125,14 @@ public:
         m_listener.onFailure(error);
     }
 
-    void setApiUrl(const UriString &url) { m_apiUrl = url; }
+    // Store the API URL for error reporting
+    void setApiUrl(const QString &url) { m_apiUrl = url; }
 
 private:
     Context &m_context;
     Listener &m_listener;
-    UriString m_apiUrl;
+    QString m_apiUrl;
 };
-
-// ============================================================================
-// DownloadStrategyIfTimestampOutsideBounds — port of download strategy
-//
-// Port of: org.quantumbadger.redreader.cache.downloadstrategy
-//     .DownloadStrategyIfTimestampOutsideBounds
-//
-// Used instead of DownloadStrategyIfNotCached because RedGifs links expire
-// after an undocumented period of time.
-// ============================================================================
-
-class DownloadStrategyIfTimestampOutsideBounds {
-public:
-    // Port of: new DownloadStrategyIfTimestampOutsideBounds(
-    //     TimestampBound.notOlderThan(TimeDuration.minutes(10))) (Java lines 60-61)
-    static const DownloadStrategyIfTimestampOutsideBounds &instance() {
-        static DownloadStrategyIfTimestampOutsideBounds inst;
-        return inst;
-    }
-
-    // INSTANCE equivalent for CacheRequest construction
-    static const DownloadStrategyIfTimestampOutsideBounds INSTANCE;
-};
-
-const DownloadStrategyIfTimestampOutsideBounds
-    DownloadStrategyIfTimestampOutsideBounds::INSTANCE;
-
 // ============================================================================
 // getImageInfo — port of Java static method (Java lines 46-92)
 // ============================================================================
@@ -191,6 +152,9 @@ void RedgifsAPI::getImageInfo(
 
     // Create the JSON parser listener (anonymous inner class in Java)
     // Port of: new CacheRequestJSONParser.Listener() { ... } (Java lines 65-92)
+    // Implements the REAL CacheRequestJSONParser::Listener. Gfycat image
+    // parsing itself is not yet ported, so a successful fetch currently
+    // reports "not yet ported" through the failure path.
     class RedgifsParserListener : public CacheRequestJSONParser::Listener {
     public:
         RedgifsParserListener(
@@ -207,24 +171,21 @@ void RedgifsAPI::getImageInfo(
                 const TimestampUTC &timestamp,
                 const QUuid &session,
                 bool fromCache) override {
+            (void)result;
             (void)timestamp;
             (void)session;
             (void)fromCache;
             try {
-                // Port of: final JsonObject outer = result.asObject()
-                //     .getObject("gfyItem"); (Java line 74)
-                const JsonObject outer = result.asObject().getObject("gfyItem");
-
                 // Port of: listener.onSuccess(ImageInfo.parseGfycat(outer));
-                // (Java line 75)
-                m_listener.onSuccess(ImageInfo::parseGfycat(outer));
+                // (Java line 75) — needs the ImageInfo model port.
+                throw std::runtime_error("ImageInfo::parseGfycat not yet ported");
             } catch (const std::exception &t) {
                 // Port of: catch(final Throwable t) { ... } (Java lines 77-85)
                 RRError error = General::getGeneralErrorForFailure(
                     General::RequestFailureType::PARSE,
                     QString::fromStdString(t.what()),
                     -1,
-                    m_apiUrl);
+                    m_apiUrl.value());
                 m_listener.onFailure(error);
             }
         }
@@ -243,7 +204,7 @@ void RedgifsAPI::getImageInfo(
     RedgifsParserListener parserListener(context, apiUrl, listener);
 
     CacheRequestJSONParser jsonParser(context, parserListener);
-    jsonParser.setApiUrl(apiUrl);
+    jsonParser.setApiUrl(apiUrl.value());
 
     // Build CacheRequest
     // Port of: new CacheRequest(apiUrl, RedditAccountManager.getAnon(), null, priority,
@@ -252,14 +213,20 @@ void RedgifsAPI::getImageInfo(
     //     Constants.FileType.IMAGE_INFO,
     //     CacheRequest.DownloadQueueType.IMMEDIATE, context,
     //     new CacheRequestJSONParser(context, listener))
-    const RedditAccount &anonAccount = RedditAccountManager::getAnon();
+    static RedditAccount anonAccount;
+
+    // RedGifs links expire: timestamp-bounded strategy (static lifetime —
+    // CacheRequest only borrows the strategy reference).
+    static const auto bound =
+        TimestampBound::notOlderThan(TimeDuration::minutes(10));
+    static const DownloadStrategyIfTimestampOutsideBounds strategy(bound);
 
     CacheRequest request(
-        apiUrl,
+        apiUrl.value(),
         anonAccount,
         std::nullopt,
-        priority,
-        DownloadStrategyIfTimestampOutsideBounds::instance(),
+        Priority(priority),
+        strategy,
         FileType::IMAGE_INFO,
         CacheRequest::DownloadQueueType::IMMEDIATE,
         jsonParser);

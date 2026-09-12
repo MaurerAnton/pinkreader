@@ -93,7 +93,7 @@ public:
 
     bool operator==(const RedditTrophyList &other) const;
     bool operator!=(const RedditTrophyList &other) const;
-    friend uint qHash(const RedditTrophyList &key, uint seed = 0);
+    friend uint qHash(const RedditTrophyList &key, uint seed);
 
 private:
     QString m_id;

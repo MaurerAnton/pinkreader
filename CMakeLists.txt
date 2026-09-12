@@ -41,8 +41,8 @@ set(SOURCES
     # Core
     src/main.cpp
     src/core/application.cpp
+    src/core/offline_detector.cpp
     src/core/pinkreader.cpp
-    src/core/constants.cpp
     src/core/version.cpp
 
     # Models (data classes)
@@ -72,6 +72,7 @@ set(SOURCES
     # Network/API
     src/network/reddit_api.cpp
     src/network/reddit_oauth.cpp
+    src/reddit/api/reddit_oauth.cpp
     src/network/reddit_requester.cpp
     src/network/http_client.cpp
     src/network/json_parser.cpp
@@ -103,6 +104,8 @@ set(SOURCES
     src/cache/cache_pruner.cpp
     src/cache/cache_stats.cpp
     src/cache/cache_request.cpp
+    src/cache/download_strategy_if_not_cached.cpp
+    src/cache/download_strategy_if_timestamp.cpp
     src/cache/cache_writer.cpp
     src/cache/cache_reader.cpp
     src/cache/image_cache.cpp
@@ -135,11 +138,6 @@ set(SOURCES
     src/ui/saved_items_view.cpp
     src/ui/history_view.cpp
     src/ui/drafts_view.cpp
-    src/ui/about_dialog.cpp
-    src/ui/flair_selector.cpp
-    src/ui/sort_dialog.cpp
-    src/ui/share_dialog.cpp
-    src/ui/image_info_dialog.cpp
 
     # UI - Custom Widgets
     src/widgets/post_card.cpp
@@ -167,23 +165,8 @@ set(SOURCES
     src/widgets/tab_bar.cpp
     src/widgets/bottom_toolbar.cpp
     src/widgets/action_button.cpp
-    src/widgets/pull_to_refresh.cpp
-    src/widgets/context_menu.cpp
-    src/widgets/toast_notification.cpp
-    src/widgets/snackbar.cpp
-    src/widgets/badge_widget.cpp
-    src/widgets/divider_widget.cpp
-    src/widgets/avatar_widget.cpp
-    src/widgets/collapsible_section.cpp
-    src/widgets/sliding_panel.cpp
-    src/widgets/navigation_stack.cpp
-    src/widgets/theme_switch.cpp
-    src/widgets/font_scale_slider.cpp
-    src/widgets/color_picker.cpp
-    src/widgets/image_upload_button.cpp
 
     # Adapters
-    src/adapters/post_list_adapter.cpp
     src/adapters/comment_list_adapter.cpp
     src/adapters/inbox_adapter.cpp
     src/adapters/listing_controller.cpp
@@ -193,6 +176,7 @@ set(SOURCES
     src/adapters/multireddit_adapter.cpp
     src/adapters/image_gallery_adapter.cpp
     src/adapters/draft_adapter.cpp
+    src/adapters/post_list_adapter.cpp
 
     # Accounts
     src/accounts/account_manager.cpp
@@ -212,35 +196,24 @@ set(SOURCES
     src/settings/gesture_settings.cpp
     src/settings/cache_settings.cpp
     src/settings/notification_settings.cpp
-    src/settings/accessibility_settings.cpp
-    src/settings/privacy_settings.cpp
 
     # Utilities
     src/utils/logging.cpp
-    src/utils/time_utils.cpp
-    src/utils/string_utils.cpp
-    src/utils/url_parser.cpp
-    src/utils/markdown_parser.cpp
-    src/utils/html_parser.cpp
-    src/utils/file_utils.cpp
-    src/utils/clipboard.cpp
-    src/utils/translation.cpp
-    src/utils/network_utils.cpp
-    src/utils/image_utils.cpp
-    src/utils/color_utils.cpp
-    src/utils/math_utils.cpp
-    src/utils/encryption.cpp
     src/utils/data_migration.cpp
     src/utils/crash_handler.cpp
-    src/utils/performance_tracker.cpp
     src/utils/deep_link_handler.cpp
     src/utils/backup_manager.cpp
     src/utils/intent_handler.cpp
+    src/utils/reddit_time.cpp
+    src/utils/general.cpp
+    src/utils/notification_manager.cpp
+    src/utils/draft_manager.cpp
 )
 
 set(HEADERS
     # Core
     src/core/application.h
+    src/core/offline_detector.hpp
     src/core/pinkreader.h
     src/core/constants.h
     src/core/version.h
@@ -303,6 +276,7 @@ set(HEADERS
     src/cache/cache_pruner.h
     src/cache/cache_stats.h
     src/cache/cache_request.h
+    src/cache/download_strategy_if_not_cached.h
     src/cache/cache_writer.h
     src/cache/cache_reader.h
     src/cache/image_cache.h
@@ -335,11 +309,6 @@ set(HEADERS
     src/ui/saved_items_view.h
     src/ui/history_view.h
     src/ui/drafts_view.h
-    src/ui/about_dialog.h
-    src/ui/flair_selector.h
-    src/ui/sort_dialog.h
-    src/ui/share_dialog.h
-    src/ui/image_info_dialog.h
 
     # Widgets
     src/widgets/post_card.h
@@ -367,20 +336,6 @@ set(HEADERS
     src/widgets/tab_bar.h
     src/widgets/bottom_toolbar.h
     src/widgets/action_button.h
-    src/widgets/pull_to_refresh.h
-    src/widgets/context_menu.h
-    src/widgets/toast_notification.h
-    src/widgets/snackbar.h
-    src/widgets/badge_widget.h
-    src/widgets/divider_widget.h
-    src/widgets/avatar_widget.h
-    src/widgets/collapsible_section.h
-    src/widgets/sliding_panel.h
-    src/widgets/navigation_stack.h
-    src/widgets/theme_switch.h
-    src/widgets/font_scale_slider.h
-    src/widgets/color_picker.h
-    src/widgets/image_upload_button.h
 
     # Adapters
     src/adapters/post_list_adapter.h
@@ -412,30 +367,15 @@ set(HEADERS
     src/settings/gesture_settings.h
     src/settings/cache_settings.h
     src/settings/notification_settings.h
-    src/settings/accessibility_settings.h
-    src/settings/privacy_settings.h
 
     # Utils
     src/utils/logging.h
-    src/utils/time_utils.h
-    src/utils/string_utils.h
-    src/utils/url_parser.h
-    src/utils/markdown_parser.h
-    src/utils/html_parser.h
-    src/utils/file_utils.h
-    src/utils/clipboard.h
-    src/utils/translation.h
-    src/utils/network_utils.h
-    src/utils/image_utils.h
-    src/utils/color_utils.h
-    src/utils/math_utils.h
-    src/utils/encryption.h
     src/utils/data_migration.h
     src/utils/crash_handler.h
-    src/utils/performance_tracker.h
     src/utils/deep_link_handler.h
     src/utils/backup_manager.h
     src/utils/intent_handler.h
+    src/utils/priority.h
 )
 
 set(RESOURCES
@@ -523,19 +463,30 @@ option(BUILD_TESTS "Build test suite" ON)
 if(BUILD_TESTS AND NOT ANDROID)
     enable_testing()
     find_package(Qt6 REQUIRED COMPONENTS Test)
-    add_executable(pinkreader_tests ${TEST_SOURCES})
-    target_include_directories(pinkreader_tests PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests
-    )
-    target_link_libraries(pinkreader_tests PRIVATE
-        Qt6::Core
-        Qt6::Test
-        Qt6::Network
-        Qt6::Sql
-        pinkreader_lib
-    )
-    add_test(NAME pinkreader_tests COMMAND pinkreader_tests)
+    # Each test file uses QTEST_MAIN and therefore defines its own main(),
+    # so build one executable per test instead of a single combined binary.
+    foreach(test_src ${TEST_SOURCES})
+        get_filename_component(test_name ${test_src} NAME_WE)
+        if(test_name STREQUAL "test_main")
+            continue()
+        endif()
+        add_executable(${test_name} ${test_src})
+        target_include_directories(${test_name} PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests
+        )
+        target_link_libraries(${test_name} PRIVATE
+            Qt6::Core
+            Qt6::Test
+            Qt6::Network
+            Qt6::Sql
+            pinkreader_lib
+        )
+        add_test(NAME ${test_name} COMMAND ${test_name})
+        set_tests_properties(${test_name} PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+        )
+    endforeach()
 endif()
 
 # Install

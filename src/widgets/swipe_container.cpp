@@ -270,7 +270,10 @@ void SwipeContainer::paintEvent(QPaintEvent *event)
 
     // Draw loading indicator if loading
     if (m_isLoading) {
-        drawLoadingIndicator(painter);
+        painter.save();
+        painter.setPen(palette().color(QPalette::Highlight));
+        painter.drawText(rect(), Qt::AlignCenter, QStringLiteral("Loading...")); 
+        painter.restore();
     }
 
     painter.end();
@@ -498,6 +501,6 @@ void SwipeContainer::animateOpacity(qreal targetOpacity)
 }
 
 // Private member initialization in constructor
-QPoint m_pressPosition;  // Will be added to class in practice
+static QPoint m_pressPosition;  // file-local (TODO: add as class member)
 
 } // namespace PinkReader

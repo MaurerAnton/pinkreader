@@ -5,6 +5,7 @@
  */
 
 #include "general.h"
+#include "common/rr_error.h"
 
 #include <QCryptographicHash>
 #include <QIODevice>

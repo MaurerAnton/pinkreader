@@ -11,6 +11,7 @@
  */
 
 #include "activities/subreddit_search_activity.h"
+#include "common/string_utils.h"
 
 // ============================================================================
 // Stub types for non-ported Android/RedReader dependencies
@@ -395,13 +396,7 @@ public:
     }
 };
 
-// StringUtils stub
-class StringUtils {
-public:
-    static QString asciiLowercase(const QString &input) {
-        return input.toLower();
-    }
-};
+// (QString StringUtils overloads live in common/string_utils.h)
 
 // CollectionStream stub
 template<typename T>

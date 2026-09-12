@@ -63,7 +63,7 @@ private:
     QString m_basePath;
     bool m_initialized = false;
     qint64 m_maxSize = 512 * 1024 * 1024;  // 512 MB default
-    QMutex m_mutex;
+    mutable QMutex m_mutex;
 
     struct CacheEntry {
         QString key;

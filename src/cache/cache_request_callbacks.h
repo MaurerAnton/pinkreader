@@ -1,25 +1,27 @@
 // Origin: org/quantumbadger/redreader/cache/CacheRequestCallbacks.java
 #pragma once
 
+#include <QByteArray>
+#include <QString>
+#include <QUuid>
+
 #include <functional>
 #include <memory>
-#include <string>
+#include <optional>
 #include <stdexcept>
-#include <cstdint>
+
+#include "cache/cache_manager.h"
 
 namespace PinkReader {
 
 class RRError;
-class ReadableCacheFile;
-class SeekableInputStream;
 class TimestampUTC;
-class UUID;
 
-template<typename T, typename E>
+template<typename T, typename E = std::exception>
 class GenericFactory {
 public:
 	virtual ~GenericFactory() = default;
-	virtual T create() = 0;
+	virtual T create() const = 0;
 };
 
 class CacheRequestCallbacks {
@@ -31,32 +33,32 @@ public:
 	virtual void onDownloadStarted() {}
 
 	virtual void onDataStreamAvailable(
-			const GenericFactory<SeekableInputStream, std::runtime_error>& streamFactory,
-			const TimestampUTC& timestamp,
-			const UUID& session,
+			const GenericFactory<QByteArray> &streamFactory,
+			const TimestampUTC &timestamp,
+			const QUuid &session,
 			bool fromCache,
-			const std::string* mimetype) {}
+			const std::optional<QString> &mimetype) {}
 
 	virtual void onDataStreamComplete(
-			const GenericFactory<SeekableInputStream, std::runtime_error>& streamFactory,
-			const TimestampUTC& timestamp,
-			const UUID& session,
+			const GenericFactory<QByteArray> &streamFactory,
+			const TimestampUTC &timestamp,
+			const QUuid &session,
 			bool fromCache,
-			const std::string* mimetype) {}
+			const std::optional<QString> &mimetype) {}
 
 	virtual void onProgress(
 			bool authorizationInProgress,
-			int64_t bytesRead,
-			int64_t totalBytes) {}
+			qint64 bytesRead,
+			qint64 totalBytes) {}
 
-	virtual void onFailure(const RRError& error) = 0;
+	virtual void onFailure(const RRError &error) = 0;
 
 	virtual void onCacheFileWritten(
-			const ReadableCacheFile& cacheFile,
-			const TimestampUTC& timestamp,
-			const UUID& session,
+			const CacheManager::ReadableCacheFile &cacheFile,
+			const TimestampUTC &timestamp,
+			const QUuid &session,
 			bool fromCache,
-			const std::string* mimetype) {}
+			const std::optional<QString> &mimetype) {}
 };
 
 } // namespace PinkReader

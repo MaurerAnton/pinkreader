@@ -33,6 +33,7 @@ HttpClient::HttpClient(QObject *parent)
 
 HttpClient::~HttpClient()
 {
+
     // Cancel any active requests
     for (QNetworkReply *reply : m_activeReplies) {
         if (reply) {
@@ -42,6 +43,18 @@ HttpClient::~HttpClient()
     }
     m_activeReplies.clear();
     m_pendingRequests.clear();
+}
+
+HttpClient *HttpClient::instance() {
+    static HttpClient inst;
+    return &inst;
+}
+
+QNetworkAccessManager *HttpClient::networkManager() {
+    if (m_nam == nullptr) {
+        m_nam = new QNetworkAccessManager(this);
+    }
+    return m_nam;
 }
 
 bool HttpClient::initialize()

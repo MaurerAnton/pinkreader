@@ -15,6 +15,8 @@
 #include <QMutex>
 #include <QFont>
 
+class QApplication;
+
 namespace PinkReader {
 
 class FontManager : public QObject
@@ -48,6 +50,12 @@ public:
     bool contains(const QString &key) const;
     void remove(const QString &key);
     QStringList allKeys() const;
+
+    // Process-wide singleton (used by main()).
+    static FontManager &instance();
+
+    // Scales the application font from the font_size pref.
+    void applyFontScaling(QApplication *app);
 
     // Import/Export
     QJsonObject exportAll() const;

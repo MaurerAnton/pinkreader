@@ -93,7 +93,7 @@ public:
 
     bool operator==(const RedditEmoji &other) const;
     bool operator!=(const RedditEmoji &other) const;
-    friend uint qHash(const RedditEmoji &key, uint seed = 0);
+    friend uint qHash(const RedditEmoji &key, uint seed);
 
 private:
     QString m_id;

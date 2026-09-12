@@ -168,7 +168,7 @@ private:
     };
 
     QSet<OnSharedPreferenceChangeListener *> m_activeListeners;
-    QMutex m_listenerMutex;
+    mutable QMutex m_listenerMutex;
 };
 
 // ========================================================================

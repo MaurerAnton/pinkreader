@@ -144,7 +144,7 @@ private:
     // Active request tracking
     QVector<QNetworkReply *> m_activeReplies;
     QVector<RequestContext> m_pendingRequests;
-    QMutex m_requestMutex;
+    mutable QMutex m_requestMutex;
 
     static constexpr int MAX_PENDING_REQUESTS = 100;
     static constexpr int REQUEST_COOLDOWN_MS = 100;

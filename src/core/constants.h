@@ -29,8 +29,11 @@ class SubredditCanonicalId;
 
 // ============================================================================
 // Priority — port of Java inner class Constants.Priority (Java lines 244-261)
+// Nested under Constants (like upstream) so it never collides with the
+// Priority request-priority data class (utils/priority.h).
 // ============================================================================
 
+namespace Constants {
 namespace Priority {
     constexpr int CAPTCHA                 = -600;
     constexpr int API_ACTION              = -500;
@@ -48,7 +51,13 @@ namespace Priority {
     constexpr int API_USER_ABOUT          = -500;
     constexpr int API_INBOX_LIST          = -500;
     constexpr int DEV_ANNOUNCEMENTS       = 600;
-}
+} // namespace Priority
+
+// Activity request codes (used with onActivityResult)
+constexpr int OAUTH_LOGIN_REQUEST_CODE = 1001;
+constexpr int IMAGE_PICKER_REQUEST_CODE = 1002;
+constexpr int FILE_PICKER_REQUEST_CODE = 1003;
+} // namespace Constants
 
 // ============================================================================
 // FileType — port of Java inner class Constants.FileType (Java lines 263-277)

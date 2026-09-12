@@ -3,7 +3,7 @@
 #include "cache_request_v2.h"
 #include "cache_manager_v2.h"
 #include "cache_compression_type.h"
-#include "memory_data_stream.h"
+#include "common/datastream/memory_data_stream.h"
 
 #include <cstring>
 #include <cstdio>

@@ -172,7 +172,7 @@ private:
 
     // Internal database helpers
     QSqlDatabase m_db;
-    QMutex m_mutex;
+    mutable QMutex m_mutex;
     QString m_dbPath;
 
     void ensureOpen();

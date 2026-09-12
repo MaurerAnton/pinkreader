@@ -46,4 +46,47 @@ std::string StringUtils::fromUTF8(const std::vector<uint8_t>& bytes) {
 	return std::string(bytes.begin(), bytes.end());
 }
 
+namespace {
+
+// ASCII-only fold of one QChar (mirrors the std::string overloads above:
+// the class deliberately folds ASCII only, never full Unicode case).
+QChar asciiLowerQChar(QChar c) {
+	ushort u = c.unicode();
+	if (u >= 'A' && u <= 'Z') {
+		return QChar(u - 'A' + 'a');
+	}
+	return c;
+}
+
+QChar asciiUpperQChar(QChar c) {
+	ushort u = c.unicode();
+	if (u >= 'a' && u <= 'z') {
+		return QChar(u - 'a' + 'A');
+	}
+	return c;
+}
+
+} // anonymous namespace
+
+QString StringUtils::asciiLowercase(const QString& input) {
+	QString result = input;
+	for (int i = 0; i < result.size(); ++i) {
+		result[i] = asciiLowerQChar(result.at(i));
+	}
+	return result;
+}
+
+QString StringUtils::asciiUppercase(const QString& input) {
+	QString result = input;
+	for (int i = 0; i < result.size(); ++i) {
+		result[i] = asciiUpperQChar(result.at(i));
+	}
+	return result;
+}
+
+bool StringUtils::asciiLowercaseContains(const QString& haystack,
+		const QString& needle) {
+	return asciiLowercase(haystack).contains(asciiLowercase(needle));
+}
+
 } // namespace PinkReader

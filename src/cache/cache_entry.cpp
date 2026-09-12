@@ -7,7 +7,6 @@
 
 #include "cache/cache_entry.h"
 #include "utils/logging.h"
-#include "utils/file_utils.h"
 
 #include <QDir>
 #include <QFile>
@@ -310,17 +309,17 @@ QString CacheEntry::entryPath(const QString &key) const
     return QDir(m_basePath).absoluteFilePath(key);
 }
 
-QVector<CacheEntry::CacheEntry> CacheEntry::loadIndex()
+QVector<CacheEntry::Entry> CacheEntry::loadIndex()
 {
-    return QVector<CacheEntry>();
+    return QVector<Entry>();
 }
 
-void CacheEntry::saveIndex(const QVector<CacheEntry> &entries)
+void CacheEntry::saveIndex(const QVector<Entry> &entries)
 {
     Q_UNUSED(entries)
 }
 
-void CacheEntry::removeEntryFiles(const CacheEntry &entry)
+void CacheEntry::removeEntryFiles(const Entry &entry)
 {
     QFile::remove(entry.filePath);
 }

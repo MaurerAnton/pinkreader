@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <QString>
 #include "optional.h"
 
 namespace PinkReader {
@@ -77,6 +78,15 @@ public:
 	 * Equivalent to: StringUtils.fromUTF8(byte[])
 	 */
 	static std::string fromUTF8(const std::vector<uint8_t>& bytes);
+
+	/**
+	 * Qt overloads (same ASCII-only folding as above, for callers that
+	 * work with QString — e.g. the search UI).
+	 */
+	static QString asciiLowercase(const QString& input);
+	static QString asciiUppercase(const QString& input);
+	static bool asciiLowercaseContains(const QString& haystack,
+		const QString& needle);
 };
 
 } // namespace PinkReader

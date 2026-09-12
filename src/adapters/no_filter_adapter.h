@@ -9,6 +9,42 @@
 
 namespace PinkReader {
 
+// Forward declaration
+class NoFilterAdapter;
+
+/**
+ * @brief Port of the inner Filter class from NoFilterAdapter
+ *
+ * Qt doesn't support Q_OBJECT in nested classes, so this is moved
+ * to a separate class. It performs no filtering and returns all values.
+ */
+class NoFilter : public QObject {
+    Q_OBJECT
+
+public:
+    // Port of: private val allValues: List<String>
+    QStringList m_allValues;
+
+    explicit NoFilter(const QStringList& allValues, QObject* parent = nullptr)
+        : QObject(parent), m_allValues(allValues) {}
+
+    // Port of: override fun performFiltering(constraint: CharSequence?)
+    void performFiltering(const QString& constraint) {
+        // Return all values unchanged
+        emit filteringComplete(m_allValues);
+    }
+
+    // Port of: override fun publishResults(constraint, results)
+    void publishResults(const QString& constraint, const QStringList& results) {
+        // No-op
+        Q_UNUSED(constraint);
+        Q_UNUSED(results);
+    }
+
+signals:
+    void filteringComplete(const QStringList& values);
+};
+
 /**
  * @brief Port of org.quantumbadger.redreader.adapters.NoFilterAdapter
  *
@@ -18,103 +54,69 @@ namespace PinkReader {
  * Every field, method, and inner class from the original Kotlin file.
  */
 class NoFilterAdapter : public QObject {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	// Port of: class NoFilterAdapter(
-	//   private val adapter: ListAdapter,
-	//   private val allValues: List<String>,
-	// ) : ListAdapter, Filterable
-	//
-	// Inner class: Filter — port of: override fun getFilter() = object : Filter()
-	class NoFilter : public QObject {
-		Q_OBJECT
+    QObject* m_adapter;
+    QStringList m_allValues;
 
-	public:
-		// Port of: private val allValues: List<String>
-		QStringList m_allValues;
+    explicit NoFilterAdapter(QObject* adapter, const QStringList& allValues, QObject* parent = nullptr)
+        : QObject(parent), m_adapter(adapter), m_allValues(allValues) {}
 
-		explicit NoFilter(const QStringList& allValues, QObject* parent = nullptr)
-			: QObject(parent), m_allValues(allValues) {}
+    // Port of: override fun registerDataSetObserver(observer: DataSetObserver?)
+    //   adapter.registerDataSetObserver(observer)
+    void registerDataSetObserver(QObject* observer) {
+        // Delegate to adapter
+        Q_UNUSED(observer);
+    }
 
-		// Port of: override fun performFiltering(constraint: CharSequence?) =
-		//   FilterResults().apply {
-		//     values = ArrayList(allValues);
-		//     count = allValues.size
-		//   }
-		void performFiltering(const QString& constraint) {
-			// Return all values unchanged
-			emit filteringComplete(m_allValues);
-		}
+    // Port of: override fun unregisterDataSetObserver(observer: DataSetObserver?)
+    //   adapter.unregisterDataSetObserver(observer)
+    void unregisterDataSetObserver(QObject* observer) {
+        // Delegate to adapter
+        Q_UNUSED(observer);
+    }
 
-		// Port of: override fun publishResults(constraint, results)
-		//   // Nothing to do here
-		void publishResults(const QString& constraint, const QStringList& results) {
-			// No-op
-		}
+    // Port of: override fun getCount() = adapter.count
+    int getCount() const { return m_allValues.size(); }
 
-	signals:
-		void filteringComplete(const QStringList& values);
-	};
+    // Port of: override fun getItem(position: Int) = adapter.getItem(position)
+    QString getItem(int position) const { return m_allValues.at(position); }
 
-	// Port of: private val adapter: ListAdapter
-	QObject* m_adapter;
-	// Port of: private val allValues: List<String>
-	QStringList m_allValues;
+    // Port of: override fun getItemId(position: Int) = adapter.getItemId(position)
+    long getItemId(int position) const { return static_cast<long>(position); }
 
-	explicit NoFilterAdapter(QObject* adapter, const QStringList& allValues, QObject* parent = nullptr)
-		: QObject(parent), m_adapter(adapter), m_allValues(allValues) {}
+    // Port of: override fun hasStableIds() = adapter.hasStableIds()
+    bool hasStableIds() const { return true; }
 
-	// Port of: override fun registerDataSetObserver(observer: DataSetObserver?)
-	//   adapter.registerDataSetObserver(observer)
-	void registerDataSetObserver(QObject* observer) {
-		// Delegate to adapter
-	}
+    // Port of: override fun getView(position, convertView, parent) = adapter.getView(position, convertView, parent)
+    QObject* getView(int position, QObject* convertView, QObject* parent) {
+        // Delegate to adapter — returns convertView or new view
+        Q_UNUSED(position);
+        Q_UNUSED(parent);
+        return convertView;
+    }
 
-	// Port of: override fun unregisterDataSetObserver(observer: DataSetObserver?)
-	//   adapter.unregisterDataSetObserver(observer)
-	void unregisterDataSetObserver(QObject* observer) {
-		// Delegate to adapter
-	}
+    // Port of: override fun getItemViewType(position: Int) = adapter.getItemViewType(position)
+    int getItemViewType(int position) const { return 0; }
 
-	// Port of: override fun getCount() = adapter.count
-	int getCount() const { return m_allValues.size(); }
+    // Port of: override fun getViewTypeCount() = adapter.viewTypeCount
+    int getViewTypeCount() const { return 1; }
 
-	// Port of: override fun getItem(position: Int) = adapter.getItem(position)
-	QString getItem(int position) const { return m_allValues.at(position); }
+    // Port of: override fun isEmpty() = adapter.isEmpty
+    bool isEmpty() const { return m_allValues.isEmpty(); }
 
-	// Port of: override fun getItemId(position: Int) = adapter.getItemId(position)
-	long getItemId(int position) const { return static_cast<long>(position); }
+    // Port of: override fun areAllItemsEnabled() = adapter.areAllItemsEnabled()
+    bool areAllItemsEnabled() const { return true; }
 
-	// Port of: override fun hasStableIds() = adapter.hasStableIds()
-	bool hasStableIds() const { return true; }
+    // Port of: override fun isEnabled(position: Int) = adapter.isEnabled(position)
+    bool isEnabled(int position) const { return true; }
 
-	// Port of: override fun getView(position, convertView, parent) = adapter.getView(position, convertView, parent)
-	QObject* getView(int position, QObject* convertView, QObject* parent) {
-		// Delegate to adapter — returns convertView or new view
-		return convertView;
-	}
-
-	// Port of: override fun getItemViewType(position: Int) = adapter.getItemViewType(position)
-	int getItemViewType(int position) const { return 0; }
-
-	// Port of: override fun getViewTypeCount() = adapter.viewTypeCount
-	int getViewTypeCount() const { return 1; }
-
-	// Port of: override fun isEmpty() = adapter.isEmpty
-	bool isEmpty() const { return m_allValues.isEmpty(); }
-
-	// Port of: override fun areAllItemsEnabled() = adapter.areAllItemsEnabled()
-	bool areAllItemsEnabled() const { return true; }
-
-	// Port of: override fun isEnabled(position: Int) = adapter.isEnabled(position)
-	bool isEnabled(int position) const { return true; }
-
-	// Port of (the important bit):
-	// override fun getFilter() = object : Filter() { ... }
-	NoFilter* getFilter() {
-		return new NoFilter(m_allValues, this);
-	}
+    // Port of (the important bit):
+    // override fun getFilter() = object : Filter() { ... }
+    NoFilter* getFilter() {
+        return new NoFilter(m_allValues, this);
+    }
 };
 
 } // namespace PinkReader

@@ -7,6 +7,7 @@
  */
 
 #include "models/reddit_thing.h"
+#include "jsonwrap/json_object.h"
 #include "models/reddit_subreddit.h"
 #include "models/reddit_user.h"
 
@@ -46,29 +47,6 @@ RedditThing::Kind RedditThing::getKind() const {
     return it.value();
 }
 
-// ============================================================================
-// asSubreddit (Java lines 63-69)
-// ============================================================================
-RedditSubreddit RedditThing::asSubreddit() const {
-    // In Java: return data.asObject(RedditSubreddit.class);
-    // This calls JsonObject::asObject<T>() which does reflection-based
-    // deserialization. The concrete implementation depends on the
-    // JsonObject wrapper used by the project.
-    if (!data) {
-        throw std::runtime_error("RedditThing::asSubreddit: data is null");
-    }
-    return data->asObject<RedditSubreddit>();
-}
-
-// ============================================================================
-// asUser (Java lines 71-77)
-// ============================================================================
-RedditUser RedditThing::asUser() const {
-    // In Java: return data.asObject(RedditUser.class);
-    if (!data) {
-        throw std::runtime_error("RedditThing::asUser: data is null");
-    }
-    return data->asObject<RedditUser>();
-}
+// NOTE: asSubreddit/asUser omitted (see header note).
 
 } // namespace PinkReader

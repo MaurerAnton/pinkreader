@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include "image_host.h"
 #include <QObject>
 #include <QString>
 #include <QUrl>
@@ -24,23 +25,7 @@
 
 namespace PinkReader {
 
-/**
- * @brief Image/video information returned by host APIs
- */
-struct ImageInfo {
-    QString url;           ///< Direct media URL
-    QString thumbnailUrl;  ///< Thumbnail URL
-    QString title;         ///< Media title/caption
-    QString description;   ///< Media description
-    int width = 0;         ///< Width in pixels
-    int height = 0;        ///< Height in pixels
-    qint64 sizeBytes = 0;  ///< File size in bytes
-    QString mimeType;      ///< MIME type
-    bool isVideo = false;  ///< Whether this is a video
-    bool isGif = false;    ///< Whether this is a GIF
-    bool hasAudio = false; ///< Whether video has audio track
-    double duration = 0.0; ///< Duration in seconds (video only)
-};
+// ImageInfo is defined once in image_host.h (shared).
 
 /**
  * @brief Reddit-hosted image (i.redd.it) support

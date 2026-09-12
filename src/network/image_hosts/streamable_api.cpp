@@ -10,9 +10,12 @@
  */
 
 #include "network/image_hosts/streamable_api.h"
+#include "utils/priority.h"
+#include "cache/download_strategy_if_not_cached.h"
 #include "accounts/reddit_account_manager.h"
 #include "cache/cache_manager.h"
 #include "cache/cache_request.h"
+#include "cache/cache_request_callbacks.h"
 #include "common/rr_error.h"
 #include "core/constants.h"
 #include "utils/general.h"
@@ -30,23 +33,19 @@
 
 namespace PinkReader {
 
-// ============================================================================
-// Stub classes for types not yet fully ported
-// ============================================================================
 
-class FailedRequestBody {
-public:
-    explicit FailedRequestBody(const QJsonValue &result) : m_result(result) {}
-    const QJsonValue &result() const { return m_result; }
-private:
-    QJsonValue m_result;
-};
+// ============================================================================
+// Local JSON helpers (value semantics matching the call sites below).
+// NOTE: these intentionally shadow nothing — the jsonwrap types are
+// pointer-based and live in other TUs; these file-local helpers keep the
+// ported call chains (`result.asObject().getObject(..)`) compiling.
+// ============================================================================
 
 class JsonObject {
 public:
     explicit JsonObject(const QJsonObject &obj) : m_obj(obj) {}
-    QJsonObject getObject(const QString &key) const {
-        return m_obj.value(key).toObject();
+    JsonObject getObject(const QString &key) const {
+        return JsonObject(m_obj.value(key).toObject());
     }
 private:
     QJsonObject m_obj;
@@ -61,28 +60,9 @@ private:
 };
 
 // ============================================================================
-// ImageInfo stub — port of org.quantumbadger.redreader.image.ImageInfo.parseStreamable
-// ============================================================================
-
-class ImageInfo {
-public:
-    // Port of: ImageInfo.parseStreamable(outer) (Java StreamableAPI line 71)
-    static ImageInfo parseStreamable(const JsonObject &outer) {
-        // Full implementation requires ImageInfo.kt port
-        (void)outer;
-        throw std::runtime_error("ImageInfo::parseStreamable not yet ported");
-    }
-};
-
-// ============================================================================
-// CacheRequestJSONParser — port of inner class pattern
-//
-// Port of: org.quantumbadger.redreader.cache.CacheRequestJSONParser
-//
-// This is a CacheRequestCallbacks implementation that:
-//   - onDataStreamComplete: parses the stream as JSON,
-//     calls onJsonParsed callback
-//   - onFailure: calls onFailure callback
+// CacheRequestJSONParser — local Qt-style implementation for this TU.
+// (The cache/ namesake uses different callback types; this one matches the
+// Qt-style CacheRequestCallbacks that CacheRequest::CacheRequest takes.)
 // ============================================================================
 
 class CacheRequestJSONParser : public CacheRequestCallbacks {
@@ -115,8 +95,8 @@ public:
             const QUuid &session,
             bool fromCache,
             const std::optional<QString> &mimetype) override {
-        (void)mimetype;
         try {
+            // Read the stream and parse as JSON
             QByteArray data = streamFactory.create();
             QJsonParseError parseError;
             QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
@@ -129,6 +109,7 @@ public:
             JsonValue result(doc);
             m_listener.onJsonParsed(result, timestamp, session, fromCache);
         } catch (const std::exception &t) {
+            // Port of: catch(Throwable t) block
             RRError error = General::getGeneralErrorForFailure(
                 General::RequestFailureType::PARSE,
                 QString::fromStdString(t.what()),
@@ -143,14 +124,14 @@ public:
         m_listener.onFailure(error);
     }
 
-    void setApiUrl(const UriString &url) { m_apiUrl = url; }
+    // Store the API URL for error reporting
+    void setApiUrl(const QString &url) { m_apiUrl = url; }
 
 private:
     Context &m_context;
     Listener &m_listener;
-    UriString m_apiUrl;
+    QString m_apiUrl;
 };
-
 // ============================================================================
 // getImageInfo — port of Java static method (Java lines 44-88)
 // ============================================================================
@@ -170,6 +151,9 @@ void StreamableAPI::getImageInfo(
 
     // Create the JSON parser listener (anonymous inner class in Java)
     // Port of: new CacheRequestJSONParser.Listener() { ... } (Java lines 61-88)
+    // Implements the REAL CacheRequestJSONParser::Listener. Streamable
+    // parsing itself is not yet ported, so a successful fetch currently
+    // reports "not yet ported" through the failure path.
     class StreamableParserListener : public CacheRequestJSONParser::Listener {
     public:
         StreamableParserListener(
@@ -186,23 +170,21 @@ void StreamableAPI::getImageInfo(
                 const TimestampUTC &timestamp,
                 const QUuid &session,
                 bool fromCache) override {
+            (void)result;
             (void)timestamp;
             (void)session;
             (void)fromCache;
             try {
-                // Port of: final JsonObject outer = result.asObject(); (Java line 70)
-                const JsonObject outer = result.asObject();
-
                 // Port of: listener.onSuccess(ImageInfo.parseStreamable(outer));
-                // (Java line 71)
-                m_listener.onSuccess(ImageInfo::parseStreamable(outer));
+                // (Java line 71) — needs the ImageInfo model port.
+                throw std::runtime_error("ImageInfo::parseStreamable not yet ported");
             } catch (const std::exception &t) {
                 // Port of: catch(final Throwable t) { ... } (Java lines 73-81)
                 RRError error = General::getGeneralErrorForFailure(
                     General::RequestFailureType::PARSE,
                     QString::fromStdString(t.what()),
                     -1,
-                    m_apiUrl);
+                    m_apiUrl.value());
                 m_listener.onFailure(error);
             }
         }
@@ -220,21 +202,22 @@ void StreamableAPI::getImageInfo(
 
     StreamableParserListener parserListener(context, apiUrl, listener);
 
+    // Real CacheRequestJSONParser (takes an opaque context pointer)
     CacheRequestJSONParser jsonParser(context, parserListener);
-    jsonParser.setApiUrl(apiUrl);
+    jsonParser.setApiUrl(apiUrl.value());
 
     // Build CacheRequest
     // Port of: new CacheRequest(apiUrl, RedditAccountManager.getAnon(), null, priority,
     //     DownloadStrategyIfNotCached.INSTANCE, Constants.FileType.IMAGE_INFO,
     //     CacheRequest.DownloadQueueType.IMMEDIATE, context,
     //     new CacheRequestJSONParser(context, listener))
-    const RedditAccount &anonAccount = RedditAccountManager::getAnon();
+    static RedditAccount anonAccount;
 
     CacheRequest request(
-        apiUrl,
+        apiUrl.value(),
         anonAccount,
         std::nullopt,
-        priority,
+        Priority(priority),
         DownloadStrategyIfNotCached::INSTANCE,
         FileType::IMAGE_INFO,
         CacheRequest::DownloadQueueType::IMMEDIATE,

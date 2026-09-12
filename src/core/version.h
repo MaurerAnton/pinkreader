@@ -208,7 +208,8 @@ public:
      */
     static int compare(const QString &other)
     {
-        return versionNumber().compare(QVersionNumber::fromString(other));
+        return QVersionNumber::compare(versionNumber(),
+            QVersionNumber::fromString(other));
     }
 
 private:

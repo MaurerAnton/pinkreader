@@ -14,12 +14,13 @@
 #pragma once
 
 #include <string>
+#include "reddit/url/search_post_list_url.h"
 
 namespace PinkReader {
 
 // Forward declarations
 class Context;
-class SearchPostListURL;
+// (SearchPostListURL is fully defined above — value member below)
 
 // ============================================================================
 // SearchListingHeader — port of Java class (Java lines 35-105)
