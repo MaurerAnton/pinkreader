@@ -103,7 +103,6 @@ set(SOURCES
     src/cache/cache_pruner.cpp
     src/cache/cache_stats.cpp
     src/cache/cache_request.cpp
-    src/cache/cache_download.cpp
     src/cache/download_strategy_if_not_cached.cpp
     src/cache/download_strategy_if_timestamp.cpp
     src/cache/cache_writer.cpp

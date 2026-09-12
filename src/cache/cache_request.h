@@ -25,9 +25,19 @@ namespace PinkReader {
 class RedditAccount;
 class Priority;
 class DownloadStrategy;
-class CacheDownload;
 class RRError;
 class TimestampUTC;
+
+// Minimal CacheDownload for the Qt port — the legacy v2 header defines an
+// incompatible type with the same name and must not be included here.
+class CacheDownload {
+public:
+	void cancel();
+	void cancelDownload();
+
+private:
+	bool m_cancelled = false;
+};
 
 // ============================================================================
 // CacheRequest — port of CacheRequest.java

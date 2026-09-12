@@ -11,7 +11,6 @@
 #include "utils/priority.h"
 #include "common/rr_error.h"
 #include "cache/download_strategy.h"
-#include "cache/cache_download.h"
 #include "http/http_request_body.h"
 #include "utils/logging.h"
 
@@ -19,6 +18,9 @@
 #include <stdexcept>
 
 namespace PinkReader {
+
+void CacheDownload::cancel() { m_cancelled = true; }
+void CacheDownload::cancelDownload() { cancel(); }
 
 // NOTE: do not introduce `using DownloadQueueType/RequestFailureType` aliases
 // here — PinkReader already has a global RequestFailureType (rr_error.h) and
