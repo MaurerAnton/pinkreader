@@ -39,7 +39,7 @@ class RedditOAuth;
  *
  * @note Part of the PinkReader network layer
  */
-class RedditOauth : public QObject
+class RedditOAuth : public QObject
 {
     Q_OBJECT
 

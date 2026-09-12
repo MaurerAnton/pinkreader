@@ -175,6 +175,10 @@ set(SOURCES
     src/adapters/multireddit_adapter.cpp
     src/adapters/image_gallery_adapter.cpp
     src/adapters/draft_adapter.cpp
+    src/adapters/post_listing_controller.cpp
+    src/adapters/reddit_listing_manager.cpp
+    src/adapters/no_filter_adapter.cpp
+    src/adapters/post_list_adapter.cpp
 
     # Accounts
     src/accounts/account_manager.cpp
@@ -204,6 +208,8 @@ set(SOURCES
     src/utils/intent_handler.cpp
     src/utils/reddit_time.cpp
     src/utils/general.cpp
+    src/utils/notification_manager.cpp
+    src/utils/draft_manager.cpp
 )
 
 set(HEADERS
