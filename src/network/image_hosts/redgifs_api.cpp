@@ -15,6 +15,7 @@
 #include "utils/priority.h"
 #include "utils/reddit_time.h"
 #include "accounts/reddit_account_manager.h"
+#include "cache/cache_request_callbacks.h"
 #include "cache/cache_manager.h"
 #include "cache/cache_request.h"
 #include "common/rr_error.h"

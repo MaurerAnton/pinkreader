@@ -15,6 +15,7 @@
 #include "cache/cache_manager.h"
 #include "cache/cache_request.h"
 #include "common/rr_error.h"
+#include "cache/cache_request_callbacks.h"
 #include "core/constants.h"
 #include "utils/general.h"
 
