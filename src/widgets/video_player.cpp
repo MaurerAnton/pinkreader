@@ -501,6 +501,6 @@ void VideoPlayer::animateOpacity(qreal targetOpacity)
 }
 
 // Private member initialization in constructor
-QPoint m_pressPosition;  // Will be added to class in practice
+static QPoint m_pressPosition;  // file-local (TODO: add as class member)
 
 } // namespace PinkReader
