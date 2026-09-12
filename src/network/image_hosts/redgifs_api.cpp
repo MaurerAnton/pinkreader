@@ -213,7 +213,7 @@ void RedgifsAPI::getImageInfo(
     //     Constants.FileType.IMAGE_INFO,
     //     CacheRequest.DownloadQueueType.IMMEDIATE, context,
     //     new CacheRequestJSONParser(context, listener))
-    const RedditAccount &anonAccount = RedditAccountManager::getAnon();
+    static const RedditAccount anonAccount;
 
     // RedGifs links expire: timestamp-bounded strategy (static lifetime —
     // CacheRequest only borrows the strategy reference).

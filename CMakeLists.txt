@@ -183,8 +183,6 @@ set(SOURCES
     src/accounts/account_store.cpp
     src/accounts/account_switcher.cpp
     src/accounts/oauth_token_store.cpp
-    src/accounts/reddit_account.cpp
-    src/accounts/reddit_account_manager.cpp
 
     # Settings/Preferences
     src/settings/preferences.cpp

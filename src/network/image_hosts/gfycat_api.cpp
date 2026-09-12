@@ -211,7 +211,7 @@ void GfycatAPI::getImageInfo(
     //     DownloadStrategyIfNotCached.INSTANCE, Constants.FileType.IMAGE_INFO,
     //     CacheRequest.DownloadQueueType.IMMEDIATE, context,
     //     new CacheRequestJSONParser(context, listener))
-    const RedditAccount &anonAccount = RedditAccountManager::getAnon();
+    static const RedditAccount anonAccount;
 
     CacheRequest request(
         apiUrl.value(),
