@@ -40,9 +40,15 @@
 #include <QWindow>
 
 #ifdef Q_OS_ANDROID
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QtAndroidExtras/QtAndroid>
 #include <QtAndroidExtras/QAndroidJniEnvironment>
 #include <QtAndroidExtras/QAndroidJniObject>
+#else
+// Qt6: Android extras moved to QJniObject / QNativeInterface.
+// Full JNI port is TODO; Android builds compile against stubs below.
+#include <QJniObject>
+#endif
 #endif
 
 namespace PinkReader {
@@ -206,8 +212,8 @@ void Application::requestOrientation(Qt::ScreenOrientation orientation)
     Logging::debug("Application",
         QString("Requesting orientation: %1").arg(static_cast<int>(orientation)));
 
-#ifdef Q_OS_ANDROID
-    // On Android, we set the Activity's requested orientation
+#if defined(Q_OS_ANDROID) && QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    // On Android (Qt5), we set the Activity's requested orientation
     QAndroidJniObject activity = QtAndroid::androidActivity();
     if (activity.isValid()) {
         jint androidOrientation;
@@ -233,7 +239,8 @@ void Application::requestOrientation(Qt::ScreenOrientation orientation)
     }
 #else
     Q_UNUSED(orientation)
-    // Desktop: orientation changes are handled by the window manager
+    // Desktop + Qt6 Android: orientation changes are handled by the window
+    // manager / activity manifest. Full QJniObject port is TODO.
 #endif
 }
 
@@ -275,7 +282,7 @@ void Application::initializeAndroid()
 {
     Logging::info("Application", "Initializing Android platform...");
 
-#ifdef Q_OS_ANDROID
+#if defined(Q_OS_ANDROID) && QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     // Request necessary Android permissions
     // Note: Some permissions (like notifications on Android 13+)
     // are requested at runtime when first needed
@@ -355,6 +362,10 @@ void Application::initializeAndroid()
             }
         }
     }
+#else
+    // Qt6 Android / Desktop: permissions are declared in the manifest and
+    // deep links arrive via QEvent::FileOpen. Full QJniObject port is TODO.
+    Q_UNUSED(this)
 #endif
 }
 
