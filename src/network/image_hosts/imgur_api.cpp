@@ -219,7 +219,7 @@ void ImgurAPI::getAlbumInfo(
     //     new CacheRequestJSONParser(context, listener))
 
     // Build CacheRequest
-    static const RedditAccount anonAccount;
+    static RedditAccount anonAccount;
 
     CacheRequest request(
         apiUrl.value(),                     // url
@@ -310,7 +310,7 @@ void ImgurAPI::getImageInfo(
     jsonParser.setApiUrl(apiUrl.value());
 
     // Build CacheRequest
-    static const RedditAccount anonAccount;
+    static RedditAccount anonAccount;
 
     CacheRequest request(
         apiUrl.value(),                     // url
