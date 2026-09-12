@@ -270,7 +270,10 @@ void ErrorView::paintEvent(QPaintEvent *event)
 
     // Draw loading indicator if loading
     if (m_isLoading) {
-        drawLoadingIndicator(painter);
+        painter.save();
+        painter.setPen(palette().color(QPalette::Highlight));
+        painter.drawText(rect(), Qt::AlignCenter, QStringLiteral("Loading...")); 
+        painter.restore();
     }
 
     painter.end();
