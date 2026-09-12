@@ -18,6 +18,7 @@
 #include <QFont>
 
 class QApplication;
+class QWidget;
 
 namespace PinkReader {
 
@@ -59,6 +60,10 @@ public:
     // Loads :/themes/<theme>.qss and applies it to the app.
     void applyCurrentTheme(QApplication *app);
 
+    // Compatibility: apply current theme to a single widget.
+    // Used by UI/views code ported from the older ThemeManager API.
+    void applyToWidget(QWidget *widget);
+
     // Import/Export
     QJsonObject exportAll() const;
     bool importAll(const QJsonObject &settings);
@@ -67,6 +72,7 @@ signals:
     void settingChanged(const QString &key, const QVariant &value);
     void settingsLoaded();
     void settingsReset();
+    void themeApplied(const QString &theme);
 
 private:
     void registerDefaults();

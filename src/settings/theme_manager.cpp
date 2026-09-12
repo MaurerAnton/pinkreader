@@ -9,6 +9,7 @@
 
 #include <QApplication>
 #include <QFile>
+#include <QWidget>
 #include "utils/logging.h"
 
 #include <QDir>
@@ -310,6 +311,23 @@ void ThemeManager::applyCurrentTheme(QApplication *app) {
     if (sheet.open(QIODevice::ReadOnly | QIODevice::Text)) {
         app->setStyleSheet(QString::fromUtf8(sheet.readAll()));
     }
+    emit themeApplied(name);
+}
+
+void ThemeManager::applyToWidget(QWidget *widget) {
+    if (widget == nullptr) {
+        return;
+    }
+    if (auto *app = qobject_cast<QApplication *>(QCoreApplication::instance())) {
+        applyCurrentTheme(app);
+        // Mirror the app stylesheet onto the widget so ported call sites
+        // see an immediate effect even before a repaint.
+        const QString sheet = app->styleSheet();
+        if (!sheet.isEmpty()) {
+            widget->setStyleSheet(sheet);
+        }
+    }
+    widget->update();
 }
 
 } // namespace PinkReader
