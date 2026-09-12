@@ -483,6 +483,9 @@ if(BUILD_TESTS AND NOT ANDROID)
             pinkreader_lib
         )
         add_test(NAME ${test_name} COMMAND ${test_name})
+        set_tests_properties(${test_name} PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+        )
     endforeach()
 endif()
 
