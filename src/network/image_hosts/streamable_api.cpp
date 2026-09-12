@@ -218,7 +218,7 @@ void StreamableAPI::getImageInfo(
         anonAccount,
         std::nullopt,
         Priority(priority),
-        DownloadStrategyIfNotCached.INSTANCE,
+        DownloadStrategyIfNotCached::INSTANCE,
         FileType::IMAGE_INFO,
         CacheRequest::DownloadQueueType::IMMEDIATE,
         jsonParser);
