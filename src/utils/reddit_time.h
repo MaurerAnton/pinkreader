@@ -214,16 +214,6 @@ public:
     static constexpr char16_t NBSP = u'\u00A0';
 
 private:
-    // Port of: private data class PeriodSegment(val suffixSingular, val suffixPlural, val value)
-    struct PeriodSegment {
-        std::function<QString(const TimeStrings &)> suffixSingular;
-        std::function<QString(const TimeStrings &)> suffixPlural;
-        std::function<int(const struct DateTimePeriod &)> value;
-    };
-
-    // Port of: private val segments = listOf(...)
-    static std::vector<PeriodSegment> segments();
-
     // Port of: Kotlin DateTimePeriod equivalent for time difference
     struct DateTimePeriod {
         int years = 0;
@@ -234,6 +224,16 @@ private:
         int seconds = 0;
         int nanoseconds = 0;
     };
+
+    // Port of: private data class PeriodSegment(val suffixSingular, val suffixPlural, val value)
+    struct PeriodSegment {
+        std::function<QString(const TimeStrings &)> suffixSingular;
+        std::function<QString(const TimeStrings &)> suffixPlural;
+        std::function<int(const DateTimePeriod &)> value;
+    };
+
+    // Port of: private val segments = listOf(...)
+    static std::vector<PeriodSegment> segments();
 
     DateTimePeriod periodUntil() const;
 
