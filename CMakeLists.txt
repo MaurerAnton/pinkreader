@@ -175,9 +175,6 @@ set(SOURCES
     src/adapters/multireddit_adapter.cpp
     src/adapters/image_gallery_adapter.cpp
     src/adapters/draft_adapter.cpp
-    src/adapters/post_listing_controller.cpp
-    src/adapters/reddit_listing_manager.cpp
-    src/adapters/no_filter_adapter.cpp
     src/adapters/post_list_adapter.cpp
 
     # Accounts
