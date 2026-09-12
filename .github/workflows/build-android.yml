@@ -80,6 +80,14 @@ jobs:
       - name: Build
         run: cmake --build build-android --parallel $(nproc)
 
+      - name: Isolate Gradle project for androiddeployqt
+        # The repo root has its own settings.gradle.kts for the Gradle-based
+        # APK workflow; androiddeployqt's android-build dir needs its own
+        # settings file or Gradle 8 refuses to treat it as a standalone build.
+        run: |
+          mkdir -p build-android/android-build
+          touch build-android/android-build/settings.gradle
+
       - name: Build APK
         run: cmake --build build-android --target apk
 
