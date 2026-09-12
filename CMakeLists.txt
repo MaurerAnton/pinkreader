@@ -463,19 +463,27 @@ option(BUILD_TESTS "Build test suite" ON)
 if(BUILD_TESTS AND NOT ANDROID)
     enable_testing()
     find_package(Qt6 REQUIRED COMPONENTS Test)
-    add_executable(pinkreader_tests ${TEST_SOURCES})
-    target_include_directories(pinkreader_tests PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests
-    )
-    target_link_libraries(pinkreader_tests PRIVATE
-        Qt6::Core
-        Qt6::Test
-        Qt6::Network
-        Qt6::Sql
-        pinkreader_lib
-    )
-    add_test(NAME pinkreader_tests COMMAND pinkreader_tests)
+    # Each test file uses QTEST_MAIN and therefore defines its own main(),
+    # so build one executable per test instead of a single combined binary.
+    foreach(test_src ${TEST_SOURCES})
+        get_filename_component(test_name ${test_src} NAME_WE)
+        if(test_name STREQUAL "test_main")
+            continue()
+        endif()
+        add_executable(${test_name} ${test_src})
+        target_include_directories(${test_name} PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests
+        )
+        target_link_libraries(${test_name} PRIVATE
+            Qt6::Core
+            Qt6::Test
+            Qt6::Network
+            Qt6::Sql
+            pinkreader_lib
+        )
+        add_test(NAME ${test_name} COMMAND ${test_name})
+    endforeach()
 endif()
 
 # Install
