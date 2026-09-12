@@ -36,17 +36,32 @@
 #include <vector>
 #include <condition_variable>
 
+#include "utils/reddit_time.h"
+
 namespace PinkReader {
 
 // Forward declarations
 class Account;                         // RedditAccount port
-class CacheDbManager;
-class PrioritisedDownloadQueue;
-class PrioritisedCachedThreadPool;
 class CacheRequest;
-class CacheEntry;
-class TimeDuration;
 class UriString;
+
+// Stub managers — full ports live in non-compiled legacy headers;
+// empty definitions here satisfy unique_ptr destruction in this TU.
+class CacheDbManager {};
+class PrioritisedDownloadQueue {};
+class PrioritisedCachedThreadPool {};
+
+// Minimal CacheEntry compatible with cache_manager.cpp usage
+// (id/timestamp/session/mimetype/compression). The legacy QObject-based
+// cache_entry.h defines an unrelated type with the same name and must
+// not be included together with this header.
+struct CacheEntry {
+	int64_t id = 0;
+	TimestampUTC timestamp;
+	QUuid session;
+	std::optional<QString> mimetype;
+	CacheCompressionType cacheCompressionType = CacheCompressionType::NONE;
+};
 
 enum class CacheCompressionType {
     NONE = 0,
